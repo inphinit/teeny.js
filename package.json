@@ -1,0 +1,24 @@
+{
+    "name": "teeny.js",
+    "version": "0.0.3",
+    "description": "Very lightweight and fast route system",
+    "main": "src/Teeny.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "create": "node src/create"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/inphinit/teeny.js"
+    },
+    "keywords": [
+        "route",
+        "http"
+    ],
+    "author": "Guilherme Nascimento (brcontainer@yahoo.com.br)",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/inphinit/teeny.js/issues"
+    },
+    "homepage": "https://github.com/inphinit/teeny.js#readme"
+}

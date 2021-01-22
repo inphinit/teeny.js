@@ -1056,16 +1056,16 @@ body .markdown-body
 .codehilite .il{color:#009999}
 .codehilite .gc{color:#999;background-color:#EAF2F5}
 </style><title>README</title></head><body><article class="markdown-body"><h2 id="about-teenyjs">About Teeny.js<a class="headerlink" href="#about-teenyjs" title="Permanent link"></a></h2>
-<p>The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native language and engine (Node) resources.</p>
+<p>The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).</p>
 <h2 id="configure-your-project">Configure your project<a class="headerlink" href="#configure-your-project" title="Permanent link"></a></h2>
-<p>It requires Node10+ for use param routes (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Groups_and_Ranges">RegExp Named Capture Groups</a>), if not using parameters in routes it will work with Node 8.17+</p>
+<p>It requires Node10+ for use param routes (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Groups_and_Ranges">RegExp Named Capture Groups</a>)</p>
 <p>If not created a project you can create using <code>npm init</code>, first create a folder named <code>blog</code>:</p>
 <div class="codehilite"><pre>mkdir blog
 cd blog
 npm init
 </pre></div>
 
-<p>Or can copy <a href="./example"><code>./example</code></a> folder</p>
+<p>Or can copy <a href="C:/Users/new_g/Documents/GitHub/brcontainer/teeny.js/example"><code>./example</code></a> folder</p>
 <p>For install use:</p>
 <div class="codehilite"><pre>npm i teeny.js
 </pre></div>
@@ -1117,44 +1117,48 @@ npm init
 </thead>
 <tbody>
 <tr>
-<td><code>new Teeny(routesPath, port)</code></td>
+<td><code>new Teeny(String routesPath, Number port)</code></td>
 <td>configure routes (or others methods from class) and port</td>
 </tr>
 <tr>
-<td><code>app.action(methods, path, function)</code></td>
+<td><code>new Teeny(String routesPath, Object config)</code></td>
+<td>configure routes and server config on second param (see: <a href="https://nodejs.org/api/net.html#net_server_listen_options_callback">https://nodejs.org/api/net.html#net_server_listen_options_callback</a>)</td>
+</tr>
+<tr>
+<td><code>app.action(String|Array methods, String path, Function callback)</code></td>
 <td>Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function</td>
 </tr>
 <tr>
-<td><code>app.action(methods, path, string)</code></td>
+<td><code>app.action(String|Array methods, String path, String module)</code></td>
 <td>Define a route for load and execute other &ldquo;local&rdquo; module (it is recommended to set the absolute path)</td>
 </tr>
 <tr>
-<td><code>app.handlerCodes(array, function)</code></td>
+<td><code>app.handlerCodes(Array codes, Function callback)</code></td>
 <td>Catch http errors (like <code>ErrorDocument</code> or <code>error_page</code>) from ISPAI or if try access a route not defined (emits <code>404 Not Found</code>) or if try access a defined route with not defined http method (emits <code>405 Method Not Allowed</code>)</td>
 </tr>
 <tr>
-<td><code>app.handlerCodes(array, string)</code></td>
+<td><code>app.handlerCodes(Array codes, String modules)</code></td>
 <td>Catch http errors or errors from routes, if catchs a error execute a &ldquo;local&rdquo; module defined in second argument</td>
 </tr>
 <tr>
-<td><code>app.setDebug(boolean)</code></td>
+<td><code>app.setDebug(Boolean enable)</code></td>
 <td>Define if debug is on (<code>true</code>) or off (<code>false</code>), by default is <code>false</code></td>
 </tr>
 <tr>
-<td><code>app.setPublic(string)</code></td>
+<td><code>app.setPublic(String path)</code></td>
 <td>Define path for use static files</td>
 </tr>
 <tr>
-<td><code>app.setPattern(name, string)</code></td>
+<td><code>app.setPattern(String name, String regex)</code></td>
 <td>Create a pattern for use in route params</td>
 </tr>
 <tr>
-<td><code>app.exec()</code></td>
-<td>Starts server</td>
+<td><code>app.exec(): Promise&lt;Object&gt;</code></td>
+<td>Starts server, promise returns server info like <code>{address: "127.0.0.1", port: 7000}</code> (see <a href="https://nodejs.org/api/net.html#net_server_address">https://nodejs.org/api/net.html#net_server_address</a>)</td>
 </tr>
 <tr>
-<td><code>app.stop(callback)</code></td>
-<td>Asynchronous stop server, define callback for get response</td>
+<td><code>app.stop(): Promise&lt;Object&gt;</code></td>
+<td>Stops server, promise returns server info</td>
 </tr>
 </tbody>
 </table>

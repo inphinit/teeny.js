@@ -4,7 +4,7 @@ The main objective of this project is to be light, simple, easy to learn, to ser
 
 ## Configure your project
 
-It requires Node10+ for use param routes ([RegExp Named Capture Groups](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Groups_and_Ranges)), if not using parameters in routes it will work with Node 8.17+
+Before start, Node10+ is required.
 
 If not created a project you can create using `npm init`, first create a folder named `blog`:
 
@@ -71,17 +71,18 @@ node index.js
 ## Methods for config Teeny.js
 
 Method | Description
---- | ---
-`new Teeny(routesPath, port)` | configure routes (or others methods from class) and port
-`app.action(methods, path, function)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
-`app.action(methods, path, string)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
-`app.handlerCodes(array, function)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
-`app.handlerCodes(array, string)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
-`app.setDebug(boolean)` | Define if debug is on (`true`) or off (`false`), by default is `false`
-`app.setPublic(string)` | Define path for use static files
-`app.setPattern(name, string)` | Create a pattern for use in route params
-`app.exec()` | Starts server
-`app.stop(callback)` | Asynchronous stop server, define callback for get response
+--- | ------
+`new Teeny(String routesPath, Number port)` | configure routes (or others methods from class) and port
+`new Teeny(String routesPath, Object config)` | configure routes and server config on second param (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
+`app.action(String|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
+`app.action(String|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
+`app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
+`app.handlerCodes(Array codes, String modules)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
+`app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
+`app.setPublic(String path)` | Define path for use static files
+`app.setPattern(String name, String regex)` | Create a pattern for use in route params
+`app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
+`app.stop(): Promise<Object>` | Stops server, promise returns server info
 
 ## Patterns supported by param routes
 

@@ -1,5 +1,5 @@
 /*
- * teeny.js 0.0.3
+ * teeny.js 0.1.0
  *
  * Copyright (c) 2021 Guilherme Nascimento (brcontainer@yahoo.com.br)
  *
@@ -20,17 +20,20 @@ class Teeny
     /**
      * Configure server
      *
-     * @param {string} routePath  Define public path for static files
-     * @param {number} port       Define port for server
+     * @param {string}           routePath  Define public path for static files
+     * @param {(number|object)}  config     Define port or config server (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
      */
-    constructor(routesPath, port) {
+    constructor(routesPath, config) {
 
         this.routesPath = routesPath;
-        this.port = port;
+        this.config = Number.isInteger(config) ? { port: config } : config;
         this.debug = false;
         this.codes = [];
         this.routes = [];
         this.server = null;
+
+        this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
+        this.state = this.states.UNSENT;
 
         this.hasParams = false;
         this.paramPatterns = {
@@ -111,7 +114,7 @@ class Teeny
     /**
      * Create or remove a pattern for URL slugs
      *
-     * @param {(string)}  pattern  Set pattern for URL slug params like this /foo/<var:pattern>
+     * @param {(string)}       pattern  Set pattern for URL slug params like this /foo/<var:pattern>
      * @param {(string|null)}  regex    Set regex for specif pattern
      */
     setPattern(pattern, regex) {
@@ -124,28 +127,66 @@ class Teeny
 
     /**
      * Execute application
+     *
+     * @returns {Promise<Object>}  Response from promise returns details about server
      */
-    exec() {
-        this.server = http.createServer((request, response) => {
-            this.teenyListen(request, response);
+    async exec() {
+        if (this.state === this.states.UNSENT) {
+            this.teenyRefresh();
+        }
+
+        return new Promise((resolve, reject) => {
+            if (this.state === this.states.STOPPED || this.state === this.states.UNSENT) {
+                this.state = this.states.STARTING;
+
+                if (!this.server) {
+                    this.server = http.createServer((request, response) => {
+                        this.teenyListen(request, response);
+                    });
+                }
+
+                this.server.listen(this.config, () => {
+                    this.state = this.states.STARTED;
+                    
+                    const details = this.server.address();
+
+                    if (this.debug) {
+                        console.info(`[${new Date()}]`, `Teeny server started on ${details.address}:${details.port}`);
+                    }
+
+                    resolve(details);
+                });
+            } else {
+                reject('server is already started');
+            }
         });
-
-        this.server.listen(this.port);
-
-        console.info(`[${new Date()}]`, `Teeny server started on ${this.port} port`);
-
-        this.teenyRefresh();
     }
 
     /**
-     * Stops server and destroy all connections
+     * Stops server
      *
-     * @param {(function)}  callback  Execute callback when server is stoped
+     * @returns {Promise<Object>}  Response from promise returns details about server
      */
-    stop(callback)
+    async stop()
     {
-        this.server.close(() => {
-            console.info(`[${new Date()}]`, `Server from ${this.port} port has stoped`);
+        return new Promise((resolve, reject) => {
+            if (this.state === this.states.STARTED) {
+                this.state = this.states.STOPPING;
+
+                const details = this.server.address();
+
+                this.server.close(() => {
+                    this.state = this.states.STOPPED;
+
+                    if (this.debug) {
+                        console.info(`[${new Date()}]`, `Stopped server ${details.address}:${details.port}`);
+                    }
+
+                    resolve(details);
+                });
+            } else {
+                reject('server is not started');
+            }
         });
     }
 
@@ -154,14 +195,17 @@ class Teeny
         const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]');
 
         for (let path in this.routes) {
+            if (patterns.hasOwnProperty(pattern) === false) continue;
+
             const value = this.routes[path];
 
             if (path.indexOf('<') !== -1 && value[method]) {
-                path = path.replace(getParams, '(?<$1><$3>)', path);
-                path = path.replace(/\<\>\)/, '.*?)', path);
+                path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/, '.*?)');
 
                 for (const pattern in patterns) {
-                    path = path.replace('<' + pattern + '>)', patterns[pattern] + ')');
+                    if (patterns.hasOwnProperty(pattern)) {
+                        path = path.replace('<' + pattern + '>)', patterns[pattern] + ')');
+                    }
                 }
 
                 const params = pathinfo.match(new RegExp('^' + path + '$'));
@@ -213,8 +257,8 @@ class Teeny
         } else {
             this.teenyInfo(method, path, code);
         }
-        
-        response.end('');
+
+        response.end();
     }
 
     teenyInfo(method, path, code, error) {
@@ -269,7 +313,7 @@ class Teeny
     teenyListen(request, response) {
         const path = request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1);
 
-        if (this.teenyPublic(path, response)) return;
+        // if (this.teenyPublic(path, response)) return;
 
         const method = request.method;
 
@@ -306,13 +350,19 @@ class Teeny
         if (lstat.mtimeMs > this.updateRoutes) {
             if (require.cache[routesPath]) {
                 delete require.cache[routesPath];
-
-                if (this.debug) {
-                    console.info(`[${new Date()}]`, 'update routes');
-                }
             }
 
-            require(routesPath)(this);
+            if (this.debug) {
+                console.info(`[${new Date()}]`, 'update routes');
+            }
+
+            try {
+                require(routesPath)(this);
+            } catch (ee) {
+                if (this.debug) {
+                    console.error(ee);
+                }
+            }
 
             this.updateRoutes = lstat.mtimeMs;
         }

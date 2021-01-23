@@ -1,5 +1,5 @@
 /*
- * teeny.js 0.1.0
+ * teeny.js 0.1.1
  *
  * Copyright (c) 2021 Guilherme Nascimento (brcontainer@yahoo.com.br)
  *
@@ -24,12 +24,12 @@ class Teeny
      * @param {(number|object)}  config     Define port or config server (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
      */
     constructor(routesPath, config) {
-
         this.routesPath = routesPath;
         this.config = Number.isInteger(config) ? { port: config } : config;
         this.debug = false;
         this.codes = [];
         this.routes = [];
+        this.modules = new Set;
         this.server = null;
 
         this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
@@ -67,6 +67,8 @@ class Teeny
                 this.action(method, path, callback);
             }
         } else {
+            this.teenyAddModule(callback);
+
             path = '/' + path.replace(/^\/+?/, '');
 
             if (!this.routes[path]) {
@@ -88,6 +90,8 @@ class Teeny
      * @param {*}      callback
      */
     handlerCodes(codes, callback) {
+        this.teenyAddModule(callback);
+
         for (const code of codes) {
             this.codes[String(code)] = callback;
         }
@@ -195,7 +199,7 @@ class Teeny
         const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]');
 
         for (let path in this.routes) {
-            if (patterns.hasOwnProperty(pattern) === false) continue;
+            if (this.routes.hasOwnProperty(path) === false) continue;
 
             const value = this.routes[path];
 
@@ -343,14 +347,32 @@ class Teeny
         this.teenyDispatch(request, response, method, path, callback, newCode, null);
     }
 
+    teenyAddModule(mod) {
+        if (typeof mod === 'string') {
+            this.modules.add(mod);
+        }
+    }
+
+    teenyClearModules() {
+        if (this.updateRoutes !== 0) {
+            for (let mod of this.modules) {
+                mod = require.resolve(mod);
+
+                if (require.cache[mod]) {
+                    delete require.cache[mod];
+                }
+            }
+
+            this.modules.clear();
+        }
+    }
+
     teenyRefresh() {
         const routesPath = require.resolve(this.routesPath);
         const lstat = fs.lstatSync(routesPath);
 
         if (lstat.mtimeMs > this.updateRoutes) {
-            if (require.cache[routesPath]) {
-                delete require.cache[routesPath];
-            }
+            this.teenyClearModules();
 
             if (this.debug) {
                 console.info(`[${new Date()}]`, 'update routes');
@@ -363,6 +385,8 @@ class Teeny
                     console.error(ee);
                 }
             }
+
+            this.teenyAddModule(routesPath);
 
             this.updateRoutes = lstat.mtimeMs;
         }

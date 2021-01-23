@@ -77,7 +77,7 @@ Method | Description
 `app.action(String|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
 `app.action(String|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
 `app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
-`app.handlerCodes(Array codes, String modules)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
+`app.handlerCodes(Array codes, String module)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
 `app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
 `app.setPublic(String path)` | Define path for use static files
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params

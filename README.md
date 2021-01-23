@@ -2,6 +2,14 @@
 
 The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).
 
+## Advantages of using Teeny
+
+It is possible to use modules in the routes and method `app.handlerCodes()` and these modules are loaded only when necessary.
+
+When you edit the file containing the routes, **Teeny.js** detects and updates everything on its own without having to restart the server, something that is often necessary in other similar libs. This makes it easy to quickly maintain or reconfigure anything called within `routes.js`.
+
+It is possible to create your own patterns to use in route parameters.
+
 ## Configure your project
 
 Before start, Node10+ is required.

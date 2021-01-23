@@ -1057,15 +1057,19 @@ body .markdown-body
 .codehilite .gc{color:#999;background-color:#EAF2F5}
 </style><title>README</title></head><body><article class="markdown-body"><h2 id="about-teenyjs">About Teeny.js<a class="headerlink" href="#about-teenyjs" title="Permanent link"></a></h2>
 <p>The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).</p>
+<h2 id="advantages-of-using-teeny">Advantages of using Teeny<a class="headerlink" href="#advantages-of-using-teeny" title="Permanent link"></a></h2>
+<p>It is possible to use modules in the routes and method <code>app.handlerCodes()</code> and these modules are loaded only when necessary.</p>
+<p>When you edit the file containing the routes, <strong>Teeny.js</strong> detects and updates everything on its own without having to restart the server, something that is often necessary in other similar libs. This makes it easy to quickly maintain or reconfigure anything called within <code>routes.js</code>.</p>
+<p>It is possible to create your own patterns to use in route parameters.</p>
 <h2 id="configure-your-project">Configure your project<a class="headerlink" href="#configure-your-project" title="Permanent link"></a></h2>
-<p>It requires Node10+ for use param routes (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Groups_and_Ranges">RegExp Named Capture Groups</a>)</p>
+<p>Before start, Node10+ is required.</p>
 <p>If not created a project you can create using <code>npm init</code>, first create a folder named <code>blog</code>:</p>
 <div class="codehilite"><pre>mkdir blog
 cd blog
 npm init
 </pre></div>
 
-<p>Or can copy <a href="C:/Users/new_g/Documents/GitHub/brcontainer/teeny.js/example"><code>./example</code></a> folder</p>
+<p>Or can copy <a href="./example"><code>./example</code></a> folder</p>
 <p>For install use:</p>
 <div class="codehilite"><pre>npm i teeny.js
 </pre></div>
@@ -1137,7 +1141,7 @@ npm init
 <td>Catch http errors (like <code>ErrorDocument</code> or <code>error_page</code>) from ISPAI or if try access a route not defined (emits <code>404 Not Found</code>) or if try access a defined route with not defined http method (emits <code>405 Method Not Allowed</code>)</td>
 </tr>
 <tr>
-<td><code>app.handlerCodes(Array codes, String modules)</code></td>
+<td><code>app.handlerCodes(Array codes, String module)</code></td>
 <td>Catch http errors or errors from routes, if catchs a error execute a &ldquo;local&rdquo; module defined in second argument</td>
 </tr>
 <tr>

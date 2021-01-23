@@ -1,5 +1,5 @@
 /*
- * teeny.js 0.1.1
+ * teeny.js 0.1.2
  *
  * Copyright (c) 2021 Guilherme Nascimento (brcontainer@yahoo.com.br)
  *
@@ -34,6 +34,7 @@ class Teeny
 
         this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
         this.state = this.states.UNSENT;
+        this.maintenance = false;
 
         this.hasParams = false;
         this.paramPatterns = {
@@ -315,9 +316,15 @@ class Teeny
     }
 
     teenyListen(request, response) {
+        if (this.maintenance) {
+            response.writeHead(503, this.defaultType);
+            response.end('Service Unavailable');
+            return;
+        }
+
         const path = request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1);
 
-        // if (this.teenyPublic(path, response)) return;
+        if (this.teenyPublic(path, response)) return;
 
         const method = request.method;
 
@@ -372,6 +379,11 @@ class Teeny
         const lstat = fs.lstatSync(routesPath);
 
         if (lstat.mtimeMs > this.updateRoutes) {
+            this.maintenance = true;
+
+            this.codes = [];
+            this.routes = [];
+
             this.teenyClearModules();
 
             if (this.debug) {
@@ -380,13 +392,15 @@ class Teeny
 
             try {
                 require(routesPath)(this);
+
+                this.teenyAddModule(routesPath);
+
+                this.maintenance = false;
             } catch (ee) {
                 if (this.debug) {
                     console.error(ee);
                 }
             }
-
-            this.teenyAddModule(routesPath);
 
             this.updateRoutes = lstat.mtimeMs;
         }

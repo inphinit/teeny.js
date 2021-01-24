@@ -82,8 +82,8 @@ Method | Description
 --- | ------
 `new Teeny(String routesPath, Number port)` | configure routes (or others methods from class) and port
 `new Teeny(String routesPath, Object config)` | configure routes and server config on second param (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
-`app.action(String|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
-`app.action(String|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
+`app.action(String\|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
+`app.action(String\|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
 `app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
 `app.handlerCodes(Array codes, String module)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
 `app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`

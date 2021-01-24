@@ -23,7 +23,8 @@ class Teeny
      * @param {string}           routePath  Define public path for static files
      * @param {(number|object)}  config     Define port or config server (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
      */
-    constructor(routesPath, config) {
+    constructor(routesPath, config)
+    {
         this.routesPath = routesPath;
         this.config = Number.isInteger(config) ? { port: config } : config;
         this.debug = false;
@@ -62,7 +63,8 @@ class Teeny
      * @param {string}          path
      * @param {*}               callback
      */
-    action(methods, path, callback) {
+    action(methods, path, callback)
+    {
         if (Array.isArray(methods)) {
             for (const method of methods) {
                 this.action(method, path, callback);
@@ -90,7 +92,8 @@ class Teeny
      * @param {array}  codes
      * @param {*}      callback
      */
-    handlerCodes(codes, callback) {
+    handlerCodes(codes, callback)
+    {
         this.teenyAddModule(callback);
 
         for (const code of codes) {
@@ -103,7 +106,8 @@ class Teeny
      *
      * @param {boolean}  debug
      */
-    setDebug(debug) {
+    setDebug(debug)
+    {
         this.debug = debug;
     }
 
@@ -112,7 +116,8 @@ class Teeny
      *
      * @param {string}  path  Set public path
      */
-    setPublic(path) {
+    setPublic(path)
+    {
         this.publicPath = path;
     }
 
@@ -122,7 +127,8 @@ class Teeny
      * @param {(string)}       pattern  Set pattern for URL slug params like this /foo/<var:pattern>
      * @param {(string|null)}  regex    Set regex for specif pattern
      */
-    setPattern(pattern, regex) {
+    setPattern(pattern, regex)
+    {
         if (regex === null) {
             delete this.paramPatterns[pattern];
         } else {
@@ -135,7 +141,8 @@ class Teeny
      *
      * @returns {Promise<Object>}  Response from promise returns details about server
      */
-    async exec() {
+    async exec()
+    {
         if (this.state === this.states.UNSENT) {
             this.teenyRefresh();
         }
@@ -195,7 +202,8 @@ class Teeny
         });
     }
 
-    teenyParams(request, response, method, pathinfo) {
+    teenyParams(request, response, method, pathinfo)
+    {
         const patterns = this.paramPatterns;
         const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]');
 
@@ -228,7 +236,8 @@ class Teeny
         return false;
     }
 
-    async teenyDispatch(request, response, method, path, callback, code, params) {
+    async teenyDispatch(request, response, method, path, callback, code, params)
+    {
         response.writeHead(code || 200, this.defaultType);
 
         if (callback) {
@@ -266,7 +275,8 @@ class Teeny
         response.end();
     }
 
-    teenyInfo(method, path, code, error) {
+    teenyInfo(method, path, code, error)
+    {
         if (this.debug) {
             if (error) {
                 console.error(`[${new Date()}]`, code, method, path);
@@ -277,7 +287,8 @@ class Teeny
         }
     }
 
-    teenyPublic(path, response) {
+    teenyPublic(path, response)
+    {
         if (this.publicPath) {
             const file = this.publicPath + path;
 
@@ -296,7 +307,8 @@ class Teeny
         return false;
     }
 
-    teenyStatic(file, lstat, response) {
+    teenyStatic(file, lstat, response)
+    {
         const readStream = fs.createReadStream(file);
 
         readStream.on('open', () => {
@@ -315,7 +327,8 @@ class Teeny
         });
     }
 
-    teenyListen(request, response) {
+    teenyListen(request, response)
+    {
         if (this.maintenance) {
             response.writeHead(503, this.defaultType);
             response.end('Service Unavailable');
@@ -354,13 +367,15 @@ class Teeny
         this.teenyDispatch(request, response, method, path, callback, newCode, null);
     }
 
-    teenyAddModule(mod) {
+    teenyAddModule(mod)
+    {
         if (typeof mod === 'string') {
             this.modules.add(mod);
         }
     }
 
-    teenyClearModules() {
+    teenyClearModules()
+    {
         if (this.updateRoutes !== 0) {
             for (let mod of this.modules) {
                 mod = require.resolve(mod);
@@ -374,7 +389,8 @@ class Teeny
         }
     }
 
-    teenyRefresh() {
+    teenyRefresh()
+    {
         const routesPath = require.resolve(this.routesPath);
         const lstat = fs.lstatSync(routesPath);
 
@@ -393,14 +409,14 @@ class Teeny
             try {
                 require(routesPath)(this);
 
-                this.teenyAddModule(routesPath);
-
                 this.maintenance = false;
             } catch (ee) {
                 if (this.debug) {
                     console.error(ee);
                 }
             }
+
+            this.teenyAddModule(routesPath);
 
             this.updateRoutes = lstat.mtimeMs;
         }

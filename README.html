@@ -1057,7 +1057,7 @@ body .markdown-body
 .codehilite .gc{color:#999;background-color:#EAF2F5}
 </style><title>README</title></head><body><article class="markdown-body"><h2 id="about-teenyjs">About Teeny.js<a class="headerlink" href="#about-teenyjs" title="Permanent link"></a></h2>
 <p>The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).</p>
-<h2 id="advantages-of-using-teeny">Advantages of using Teeny<a class="headerlink" href="#advantages-of-using-teeny" title="Permanent link"></a></h2>
+<h2 id="advantages-of-using-teenyjs">Advantages of using Teeny.js<a class="headerlink" href="#advantages-of-using-teenyjs" title="Permanent link"></a></h2>
 <p>It is possible to use modules in the routes and method <code>app.handlerCodes()</code> and these modules are loaded only when necessary.</p>
 <p>When you edit the file containing the routes, <strong>Teeny.js</strong> detects and updates everything on its own without having to restart the server, something that is often necessary in other similar libs. This makes it easy to quickly maintain or reconfigure anything called within <code>routes.js</code>.</p>
 <p>It is possible to create your own patterns to use in route parameters.</p>
@@ -1155,6 +1155,10 @@ npm init
 <tr>
 <td><code>app.setPattern(String name, String regex)</code></td>
 <td>Create a pattern for use in route params</td>
+</tr>
+<tr>
+<td><code>app.setRequire(String path)</code></td>
+<td>Set require path for load modules, this function affects the <code>routes.js</code> location and modules loaded by the <code>app.action(methods, module)</code> method</td>
 </tr>
 <tr>
 <td><code>app.exec(): Promise&lt;Object&gt;</code></td>
@@ -1271,4 +1275,52 @@ npm init
         <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">&#39;Invalid file&#39;</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">});</span>
+</pre></div>
+
+<h2 id="set-require-function-in-nodejs-v1220">Set require function in Node.js v12.2.0+<a class="headerlink" href="#set-require-function-in-nodejs-v1220" title="Permanent link"></a></h2>
+<p>Set path from current script using <code>module.createRequire</code>:</p>
+<div class="codehilite"><pre><span class="kr">const</span> <span class="p">{</span> <span class="nx">createRequire</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;module&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;Teeny.js&#39;</span><span class="p">);</span>
+
+<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequire</span><span class="p">(</span><span class="nx">__filename</span><span class="p">));</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
+</pre></div>
+
+<p>Using &ldquo;ECMAScript modules&rdquo;:</p>
+<div class="codehilite"><pre><span class="kr">import</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;Teeny.js&#39;</span><span class="p">;</span>
+<span class="kr">import</span> <span class="p">{</span> <span class="nx">createRequire</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;module&#39;</span><span class="p">;</span>
+
+<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequire</span><span class="p">(</span><span class="kr">import</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">url</span><span class="p">));</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
+</pre></div>
+
+<h2 id="set-require-function-in-old-nodejs-versions">Set require function in old Node.js versions<a class="headerlink" href="#set-require-function-in-old-nodejs-versions" title="Permanent link"></a></h2>
+<p>Set path from current script using <code>module.createRequireFromPath</code> (deprecated):</p>
+<div class="codehilite"><pre><span class="kr">const</span> <span class="p">{</span> <span class="nx">createRequireFromPath</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;module&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;teeny.js&#39;</span><span class="p">);</span>
+
+<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">__dirname</span><span class="p">}</span><span class="o">/</span><span class="err">`</span><span class="p">));</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
+</pre></div>
+
+<p>Using &ldquo;ECMAScript modules&rdquo;:</p>
+<div class="codehilite"><pre><span class="kr">import</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;Teeny.js&#39;</span><span class="p">;</span>
+<span class="kr">import</span> <span class="p">{</span> <span class="nx">createRequireFromPath</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;module&#39;</span><span class="p">;</span>
+<span class="kr">import</span> <span class="p">{</span> <span class="nx">fileURLToPath</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;url&#39;</span><span class="p">;</span>
+<span class="kr">import</span> <span class="p">{</span> <span class="nx">dirname</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;path&#39;</span><span class="p">;</span>
+
+<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">dirname</span><span class="p">(</span><span class="nx">fileURLToPath</span><span class="p">(</span><span class="kr">import</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">url</span><span class="p">))}</span><span class="o">/</span><span class="err">`</span><span class="p">));</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
 </pre></div></article></body></html>

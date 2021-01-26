@@ -1,5 +1,5 @@
 /*
- * teeny.js 0.1.2
+ * teeny.js 0.1.3
  *
  * Copyright (c) 2021 Guilherme Nascimento (brcontainer@yahoo.com.br)
  *
@@ -32,6 +32,7 @@ class Teeny
         this.routes = [];
         this.modules = new Set;
         this.server = null;
+        this.require = require;
 
         this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
         this.state = this.states.UNSENT;
@@ -134,6 +135,16 @@ class Teeny
         } else {
             this.paramPatterns[pattern] = regex;
         }
+    }
+
+    /**
+     * Set require module
+     *
+     * @param {function}  require  Set a custom require function
+     */
+    setRequire(require)
+    {
+        this.require = require;
     }
 
     /**
@@ -243,13 +254,13 @@ class Teeny
         if (callback) {
             try {
                 if (typeof callback === 'string') {
-                    const cache = require.resolve(callback);
+                    const cache = this.require.resolve(callback);
 
                     if (require.cache[cache]) {
                         delete require.cache[cache];
                     }
 
-                    require(callback)(request, response, code || 200);
+                    this.require(callback)(request, response, code || 200);
                 } else if (code) {
                     response.write(await callback(code));
                 } else if (params !== null) {
@@ -260,12 +271,17 @@ class Teeny
 
                 this.teenyInfo(method, path, code || 200);
             } catch (ee) {
-                response.writeHead(500, this.defaultType);
-
                 if (this.debug) {
-                    response.write('Fatal error in ' + ee.fileName + ' on line ' + ee.lineNumber);
-
                     this.teenyInfo(method, path, 500, ee);
+                }
+                
+                const callback = this.codes[500];
+
+                if (callback) {
+                    this.teenyDispatch(request, response, method, path, callback, 500, null);
+                    return;
+                } else {
+                    response.writeHead(500, this.defaultType);
                 }
             }
         } else {
@@ -378,7 +394,7 @@ class Teeny
     {
         if (this.updateRoutes !== 0) {
             for (let mod of this.modules) {
-                mod = require.resolve(mod);
+                mod = this.require.resolve(mod);
 
                 if (require.cache[mod]) {
                     delete require.cache[mod];
@@ -391,7 +407,7 @@ class Teeny
 
     teenyRefresh()
     {
-        const routesPath = require.resolve(this.routesPath);
+        const routesPath = this.require.resolve(this.routesPath);
         const lstat = fs.lstatSync(routesPath);
 
         if (lstat.mtimeMs > this.updateRoutes) {
@@ -407,7 +423,7 @@ class Teeny
             }
 
             try {
-                require(routesPath)(this);
+                this.require(routesPath)(this);
 
                 this.maintenance = false;
             } catch (ee) {

@@ -2,7 +2,7 @@
 
 The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).
 
-## Advantages of using Teeny
+## Advantages of using Teeny.js
 
 It is possible to use modules in the routes and method `app.handlerCodes()` and these modules are loaded only when necessary.
 
@@ -89,6 +89,7 @@ Method | Description
 `app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
 `app.setPublic(String path)` | Define path for use static files
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
+`app.setRequire(String path)` | Set require path for load modules, this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
 `app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
 `app.stop(): Promise<Object>` | Stops server, promise returns server info
 
@@ -165,4 +166,62 @@ app.action('GET', '/foo/bar/download', (request, response) => {
     }
 });
 
+```
+
+## Set require function in Node.js v12.2.0+
+
+Set path from current script using `module.createRequire`:
+
+``` javascript
+const { createRequire } = require('module');
+const { Teeny } = require('Teeny.js');
+
+const app = new Teeny('./routes.js', 7000);
+
+app.setRequire(createRequire(__filename));
+
+app.exec();
+```
+
+Using "ECMAScript modules":
+
+``` javascript
+import { Teeny } from 'Teeny.js';
+import { createRequire } from 'module';
+
+const app = new Teeny('./routes.js', 7000);
+
+app.setRequire(createRequire(import.meta.url));
+
+app.exec();
+```
+
+## Set require function in old Node.js versions
+
+Set path from current script using `module.createRequireFromPath` (deprecated):
+
+``` javascript
+const { createRequireFromPath } = require('module');
+const { Teeny } = require('teeny.js');
+
+const app = new Teeny('./routes.js', 7000);
+
+app.setRequire(createRequireFromPath(`${__dirname}/`));
+
+app.exec();
+```
+
+Using "ECMAScript modules":
+
+``` javascript
+import { Teeny } from 'Teeny.js';
+import { createRequireFromPath } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const app = new Teeny('./routes.js', 7000);
+
+app.setRequire(createRequireFromPath(`${dirname(fileURLToPath(import.meta.url))}/`));
+
+app.exec();
 ```

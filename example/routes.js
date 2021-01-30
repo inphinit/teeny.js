@@ -2,7 +2,7 @@ module.exports = (app) => {
     // Enable (or disable) debug mode
     app.setDebug(true);
 
-    app.handlerCodes([ 404, 405 ], (status) => {
+    app.handlerCodes([ 403, 404, 405, 500 ], (status) => {
         return `Error page: ${status}`;
     });
 
@@ -16,7 +16,7 @@ module.exports = (app) => {
 
     // Access http://localhost:7000/async for see response from a async function
     app.action('GET', '/async', async (request, response) => {
-        const result = await new Promise((resolve) => setTimeout(resolve, 1000, `Async working ${new Date()}!`));
+        const result = new Promise((resolve) => setTimeout(resolve, 1000, `Async working ${new Date()}!`));
 
         return result;
     });
@@ -26,8 +26,11 @@ module.exports = (app) => {
         return `Hello ${params.username}`;
     });
 
-    // Access http://localhost:7000/file for load and executes include.js module
-    app.action('GET', '/file', `${__dirname}/include.js`);
+    // Access http://localhost:7000/module for load and executes include.js module
+    app.action('GET', '/module', `./include.js`);
+
+    // Access http://localhost:7000/error for load and executes error.js module with error
+    app.action('GET', '/error', `./error.js`);
 
     // Access http://localhost:7000/api/2.0
     app.action('GET', '/api/<foobar:version>', (request, response, params) => {

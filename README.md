@@ -178,12 +178,12 @@ const { Teeny } = require('Teeny.js');
 
 const app = new Teeny('./routes.js', 7000);
 
-app.setRequire(createRequire(__filename));
+app.setRequire(createRequire('/foo/bar/baz/.'));
 
 app.exec();
 ```
 
-Using "ECMAScript modules":
+Using "ECMAScript modules" for load from same level path (like: `__dirname`):
 
 ``` javascript
 import { Teeny } from 'Teeny.js';
@@ -206,7 +206,7 @@ const { Teeny } = require('teeny.js');
 
 const app = new Teeny('./routes.js', 7000);
 
-app.setRequire(createRequireFromPath(`${__dirname}/`));
+app.setRequire(createRequireFromPath('/foo/bar/baz/.'));
 
 app.exec();
 ```
@@ -221,7 +221,7 @@ import { dirname } from 'path';
 
 const app = new Teeny('./routes.js', 7000);
 
-app.setRequire(createRequireFromPath(`${dirname(fileURLToPath(import.meta.url))}/`));
+app.setRequire(createRequireFromPath('/foo/bar/baz/.'));
 
 app.exec();
 ```

@@ -215,7 +215,7 @@ module.exports = (filepath) => {
     const filename = filepath.slice(filepath.lastIndexOf('/') + 1);
 
     if (filename) {
-        const extension = filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2);
+        const extension = filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
 
         if (mimes[extension]) {
             return mimes[extension];

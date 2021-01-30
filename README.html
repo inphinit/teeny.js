@@ -1284,12 +1284,12 @@ npm init
 
 <span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
 
-<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequire</span><span class="p">(</span><span class="nx">__filename</span><span class="p">));</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequire</span><span class="p">(</span><span class="s1">&#39;/foo/bar/baz/.&#39;</span><span class="p">));</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
 </pre></div>
 
-<p>Using &ldquo;ECMAScript modules&rdquo;:</p>
+<p>Using &ldquo;ECMAScript modules&rdquo; for load from same level path (like: <code>__dirname</code>):</p>
 <div class="codehilite"><pre><span class="kr">import</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;Teeny.js&#39;</span><span class="p">;</span>
 <span class="kr">import</span> <span class="p">{</span> <span class="nx">createRequire</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;module&#39;</span><span class="p">;</span>
 
@@ -1307,7 +1307,7 @@ npm init
 
 <span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
 
-<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">__dirname</span><span class="p">}</span><span class="o">/</span><span class="err">`</span><span class="p">));</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="s1">&#39;/foo/bar/baz/.&#39;</span><span class="p">));</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
 </pre></div>
@@ -1320,7 +1320,7 @@ npm init
 
 <span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">&#39;./routes.js&#39;</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
 
-<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">dirname</span><span class="p">(</span><span class="nx">fileURLToPath</span><span class="p">(</span><span class="kr">import</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">url</span><span class="p">))}</span><span class="o">/</span><span class="err">`</span><span class="p">));</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">setRequire</span><span class="p">(</span><span class="nx">createRequireFromPath</span><span class="p">(</span><span class="s1">&#39;/foo/bar/baz/.&#39;</span><span class="p">));</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
 </pre></div></article></body></html>

@@ -1,13 +1,3 @@
-/*
- * teeny.js 0.1.3
- *
- * Copyright (c) 2021 Guilherme Nascimento (brcontainer@yahoo.com.br)
- *
- * Released under the MIT license
- *
- * Inspired by https://github.com/inphinit/teeny
- */
-
 "use strict";
 
 const http = require('http');
@@ -15,6 +5,13 @@ const fs = require('fs');
 
 const SimpleMime = require('./SimpleMime.js');
 
+/**
+ * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
+ *
+ * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
+ * @version  0.1.4
+ * @see      {@link https://github.com/inphinit/teeny|GitHub}
+ */
 class Teeny
 {
     /**
@@ -26,13 +23,14 @@ class Teeny
     constructor(routesPath, config)
     {
         this.routesPath = routesPath;
+        this.publicPath = null;
         this.config = Number.isInteger(config) ? { port: config } : config;
         this.debug = false;
         this.codes = [];
         this.routes = [];
-        this.modules = new Set;
         this.server = null;
         this.require = require;
+        this.refreshTimeout = 0;
 
         this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
         this.state = this.states.UNSENT;
@@ -60,9 +58,9 @@ class Teeny
     /**
      * Register or remove a callback or script for a route
      *
-     * @param {(string|array)}  method
-     * @param {string}          path
-     * @param {*}               callback
+     * @param {(string|array)}  method    Define http method(s)
+     * @param {string}          path      Define path
+     * @param {*}               callback  Define function or module
      */
     action(methods, path, callback)
     {
@@ -71,8 +69,6 @@ class Teeny
                 this.action(method, path, callback);
             }
         } else {
-            this.teenyAddModule(callback);
-
             path = '/' + path.replace(/^\/+?/, '');
 
             if (!this.routes[path]) {
@@ -90,22 +86,20 @@ class Teeny
     /**
      * Handler HTTP status code from ISAPI (from apache2handler or fast-cgi)
      *
-     * @param {array}  codes
-     * @param {*}      callback
+     * @param {array}  codes     Define code errors
+     * @param {*}      callback  Define function or module
      */
     handlerCodes(codes, callback)
     {
-        this.teenyAddModule(callback);
-
         for (const code of codes) {
-            this.codes[String(code)] = callback;
+            this.codes[code] = callback;
         }
     }
 
     /**
      * Enable or disable debug mode
      *
-     * @param {boolean}  debug
+     * @param {boolean}  debug  Enable or disable debug mode
      */
     setDebug(debug)
     {
@@ -154,13 +148,11 @@ class Teeny
      */
     async exec()
     {
-        if (this.state === this.states.UNSENT) {
-            this.teenyRefresh();
-        }
-
         return new Promise((resolve, reject) => {
             if (this.state === this.states.STOPPED || this.state === this.states.UNSENT) {
                 this.state = this.states.STARTING;
+
+                this.teenyRefresh(true);
 
                 if (!this.server) {
                     this.server = http.createServer((request, response) => {
@@ -195,6 +187,8 @@ class Teeny
         return new Promise((resolve, reject) => {
             if (this.state === this.states.STARTED) {
                 this.state = this.states.STOPPING;
+
+                clearTimeout(this.refreshTimeout);
 
                 const details = this.server.address();
 
@@ -237,7 +231,7 @@ class Teeny
                 if (params !== null) {
                     const callback = value[method];
                     
-                    setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, callback, 0, params.groups), 0);
+                    setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, callback, 200, params.groups), 0);
 
                     return true;
                 }
@@ -249,7 +243,7 @@ class Teeny
 
     async teenyDispatch(request, response, method, path, callback, code, params)
     {
-        response.writeHead(code || 200, this.defaultType);
+        response.writeHead(code, this.defaultType);
 
         if (callback) {
             try {
@@ -260,8 +254,8 @@ class Teeny
                         delete require.cache[cache];
                     }
 
-                    this.require(callback)(request, response, code || 200);
-                } else if (code) {
+                    this.require(callback)(request, response, 200);
+                } else if (code !== 200) {
                     response.write(await callback(code));
                 } else if (params !== null) {
                     response.write(await callback(request, response, params));
@@ -303,33 +297,42 @@ class Teeny
         }
     }
 
-    teenyPublic(path, response)
+    teenyPublic(path, method, response)
     {
-        if (this.publicPath) {
-            const file = this.publicPath + path;
+        const file = this.publicPath + path;
 
-            try {
-                const lstat = fs.lstatSync(file);
+        try {
+            const lstat = fs.lstatSync(file);
 
-                if (lstat.isFile()) {
-                    setTimeout(() => this.teenyStatic(file, lstat, response), 0);
+            if (lstat.isFile()) {
+                setTimeout(() => this.teenyStatic(file, lstat, response), 0);
 
-                    return true;
+                return false;
+            }
+        } catch (ee) {
+            const code = ee.code;
+
+            if (code === 'EACCES' || code === 'EPERM') {
+                return 403;
+            } else if (code !== 'ENOENT') {
+                if (this.debug) {
+                    this.teenyInfo(method, path, 500, ee);
                 }
-            } catch (ee) {
+
+                return 500;
             }
         }
 
-        return false;
+        return 200;
     }
 
-    teenyStatic(file, lstat, response)
+    teenyStatic(path, lstat, response)
     {
-        const readStream = fs.createReadStream(file);
+        const readStream = fs.createReadStream(path);
 
         readStream.on('open', () => {
             response.writeHead(200, {
-                'Content-Type': SimpleMime(file),
+                'Content-Type': SimpleMime(path),
                 'Last-Modified': lstat.mtime,
                 'Content-Length': lstat.size
             });
@@ -351,93 +354,84 @@ class Teeny
             return;
         }
 
+        const method = request.method;
         const path = request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1);
 
-        if (this.teenyPublic(path, response)) return;
+        let code;
 
-        const method = request.method;
+        if (this.publicPath) {
+            code = this.teenyPublic(path, method, response);
+            
+            if (code === false) return;
+        } else {
+            code = 200;
+        }
 
-        let newCode = 0;
         let callback;
 
-        if (this.routes[path]) {
-            const routes = this.routes[path];
+        if (code === 200) {
+            if (this.routes[path]) {
+                const routes = this.routes[path];
 
-            if (routes[method]) {
-                callback = routes[method];
-            } else if (routes.ANY) {
-                callback = routes.ANY;
-            } else {
-                newCode = 405;
-            }
-        } else if (this.hasParams && this.teenyParams(request, response, method, path)) {
-            return true;
-        } else {
-            newCode = 404;
-        }
-
-        if (newCode !== 0 && this.codes[newCode]) {
-            callback = this.codes[newCode];
-        }
-
-        this.teenyDispatch(request, response, method, path, callback, newCode, null);
-    }
-
-    teenyAddModule(mod)
-    {
-        if (typeof mod === 'string') {
-            this.modules.add(mod);
-        }
-    }
-
-    teenyClearModules()
-    {
-        if (this.updateRoutes !== 0) {
-            for (let mod of this.modules) {
-                mod = this.require.resolve(mod);
-
-                if (require.cache[mod]) {
-                    delete require.cache[mod];
+                if (routes[method]) {
+                    callback = routes[method];
+                } else if (routes.ANY) {
+                    callback = routes.ANY;
+                } else {
+                    code = 405;
                 }
+            } else if (this.hasParams && this.teenyParams(request, response, method, path)) {
+                return true;
+            } else {
+                code = 404;
             }
-
-            this.modules.clear();
         }
+
+        if (code !== 200 && this.codes[code]) {
+            callback = this.codes[code];
+        }
+
+        this.teenyDispatch(request, response, method, path, callback, code, null);
     }
 
-    teenyRefresh()
+    teenyRefresh(raise)
     {
-        const routesPath = this.require.resolve(this.routesPath);
-        const lstat = fs.lstatSync(routesPath);
+        try {
+            const routesPath = this.require.resolve(this.routesPath);
 
-        if (lstat.mtimeMs > this.updateRoutes) {
-            this.maintenance = true;
+            const lstat = fs.lstatSync(routesPath);
 
-            this.codes = [];
-            this.routes = [];
+            if (lstat.mtimeMs > this.updateRoutes) {
+                this.maintenance = true;
 
-            this.teenyClearModules();
+                this.updateRoutes = lstat.mtimeMs;
 
-            if (this.debug) {
-                console.info(`[${new Date()}]`, 'update routes');
-            }
+                this.codes = [];
+                this.routes = [];
 
-            try {
+                if (this.debug) {
+                    console.info(`[${new Date()}]`, 'update routes');
+                }
+
+                if (require.cache[routesPath]) {
+                    delete require.cache[routesPath];
+                }
+
                 this.require(routesPath)(this);
 
                 this.maintenance = false;
-            } catch (ee) {
-                if (this.debug) {
-                    console.error(ee);
-                }
+            }
+        } catch (ee) {
+            if (this.debug) {
+                console.error(ee);
             }
 
-            this.teenyAddModule(routesPath);
-
-            this.updateRoutes = lstat.mtimeMs;
+            if (raise) {
+                throw ee;
+            }
         }
 
-        setTimeout(() => this.teenyRefresh(), 1000);
+        this.refreshTimeout = setTimeout(() => this.teenyRefresh(false), 1000);
     }
 }
 

@@ -9,7 +9,7 @@ const SimpleMime = require('./SimpleMime.js');
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.4
+ * @version  0.1.5
  * @see      {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
@@ -75,7 +75,7 @@ class Teeny
                 this.routes[path] = [];
             }
 
-            if (path.indexOf('<') !== false && callback) {
+            if (path.indexOf('<') !== -1 && callback) {
                 this.hasParams = true;
             }
 

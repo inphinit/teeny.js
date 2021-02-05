@@ -1,11 +1,10 @@
 {
     "name": "teeny.js",
-    "version": "0.1.5",
-    "description": "Very lightweight and fast route system",
+    "version": "0.1.6",
+    "description": "A teeny, lightweight and fast route system",
     "main": "src/Teeny.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "create": "node src/create"
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
         "type": "git",

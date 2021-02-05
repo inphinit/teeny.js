@@ -5,11 +5,22 @@ const fs = require('fs');
 
 const SimpleMime = require('./SimpleMime.js');
 
+const paramPatterns = {
+    alnum: '[\\da-zA-Z]+',
+    alpha: '[a-zA-Z]+',
+    decimal: '\\d+\\.\\d+',
+    num: '\\d+',
+    noslash: '[^\\/]+',
+    nospace: '\\S+',
+    uuid: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+    version: '\\d+\\.\\d+(\\.\\d+(-[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*(\\+[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*)?)?)?'
+};
+
 /**
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.5
+ * @version  0.1.6
  * @see      {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
@@ -23,30 +34,16 @@ class Teeny
     constructor(routesPath, config)
     {
         this.routesPath = routesPath;
-        this.publicPath = null;
         this.config = Number.isInteger(config) ? { port: config } : config;
-        this.debug = false;
-        this.codes = [];
-        this.routes = [];
+
         this.server = null;
-        this.require = require;
         this.refreshTimeout = 0;
 
         this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
         this.state = this.states.UNSENT;
         this.maintenance = false;
 
-        this.hasParams = false;
-        this.paramPatterns = {
-            alnum: '[\\da-zA-Z]+',
-            alpha: '[a-zA-Z]+',
-            decimal: '\\d+\\.\\d+',
-            num: '\\d+',
-            noslash: '[^\\/]+',
-            nospace: '\\S+',
-            uuid: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
-            version: '\\d+\\.\\d+(\\.\\d+(-[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*(\\+[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*)?)?)?'
-        };
+        this.teenyResetSettings();
 
         this.defaultType = {
             'Content-Type': 'text/html; charset=utf-8'
@@ -210,15 +207,18 @@ class Teeny
     teenyParams(request, response, method, pathinfo)
     {
         const patterns = this.paramPatterns;
-        const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]');
+        const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]', 'g');
+
+        let callback;
+        let code = 200;
 
         for (let path in this.routes) {
             if (this.routes.hasOwnProperty(path) === false) continue;
 
-            const value = this.routes[path];
+            const routes = this.routes[path];
 
-            if (path.indexOf('<') !== -1 && value[method]) {
-                path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/, '.*?)');
+            if (path.indexOf('<') !== -1) {
+                path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
 
                 for (const pattern in patterns) {
                     if (patterns.hasOwnProperty(pattern)) {
@@ -229,20 +229,30 @@ class Teeny
                 const params = pathinfo.match(new RegExp('^' + path + '$'));
 
                 if (params !== null) {
-                    const callback = value[method];
-                    
-                    setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, callback, 200, params.groups), 0);
+                    callback = routes[method] || routes.ANY;
 
-                    return true;
+                    if (!callback) {
+                        code = 405;
+                    }
+
+                    setTimeout(() => {
+                        this.teenyDispatch(request, response, method, pathinfo, callback, code, code === 200 ? params.groups : null);
+                    }, 0);
+
+                    return;
                 }
             }
         }
 
-        return false;
+        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, null, 404, null), 0);
     }
 
     async teenyDispatch(request, response, method, path, callback, code, params)
     {
+        if (code !== 200 && this.codes[code]) {
+            callback = this.codes[code];
+        }
+
         response.writeHead(code, this.defaultType);
 
         if (callback) {
@@ -380,15 +390,19 @@ class Teeny
                 } else {
                     code = 405;
                 }
-            } else if (this.hasParams && this.teenyParams(request, response, method, path)) {
-                return true;
+            } else if (this.hasParams) {
+                try {
+                    return this.teenyParams(request, response, method, path);
+                } catch (ee) {
+                    if (this.debug) {
+                        console.error(ee);
+                    }
+
+                    code = 500;
+                }
             } else {
                 code = 404;
             }
-        }
-
-        if (code !== 200 && this.codes[code]) {
-            callback = this.codes[code];
         }
 
         this.teenyDispatch(request, response, method, path, callback, code, null);
@@ -406,12 +420,11 @@ class Teeny
 
                 this.updateRoutes = lstat.mtimeMs;
 
-                this.codes = [];
-                this.routes = [];
-
                 if (this.debug) {
                     console.info(`[${new Date()}]`, 'update routes');
                 }
+
+                this.teenyResetSettings();
 
                 if (require.cache[routesPath]) {
                     delete require.cache[routesPath];
@@ -432,6 +445,17 @@ class Teeny
         }
 
         this.refreshTimeout = setTimeout(() => this.teenyRefresh(false), 1000);
+    }
+
+    teenyResetSettings()
+    {
+        this.debug = false;
+        this.publicPath = null;
+        this.codes = [];
+        this.routes = [];
+        this.require = require;
+        this.hasParams = false;
+        this.paramPatterns = Object.assign({}, paramPatterns);
     }
 }
 

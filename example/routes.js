@@ -1,6 +1,6 @@
 module.exports = (app) => {
     // Enable (or disable) debug mode
-    app.setDebug(true);
+    // app.setDebug(true);
 
     app.handlerCodes([ 403, 404, 405, 500 ], (status) => {
         return `Error page: ${status}`;
@@ -40,6 +40,11 @@ module.exports = (app) => {
     // Access http://localhost:7000/product/1000 (or another number)
     app.action('GET', '/product/<id:num>', (request, response, params) => {
         return `Product ID: ${params.id}`;
+    });
+
+    // Access http://localhost:7000/blog/title-1000 (or another number)
+    app.action('POST', '/blog/<title>-<id:num>', (request, response, params) => {
+        return `Post ID: ${params.id}<br>Post title: ${params.title}`;
     });
 
     // Set custom pattern basead in Regex (write using string)

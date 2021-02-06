@@ -20,7 +20,7 @@ const paramPatterns = {
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.7
+ * @version  0.1.8
  * @see      {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
@@ -220,35 +220,33 @@ class Teeny
         let callback;
         let code = 200;
 
-        for (let path in this.routes) {
-            if (this.routes.hasOwnProperty(path) === false) continue;
+        for (let path in this.paramRoutes) {
+            if (this.paramRoutes.hasOwnProperty(path) === false) continue;
 
-            const routes = this.routes[path];
+            const routes = this.paramRoutes[path];
 
-            if (path.indexOf('<') !== -1) {
-                path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
+            path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
 
-                for (const pattern in patterns) {
-                    if (patterns.hasOwnProperty(pattern)) {
-                        path = path.replace('<' + pattern + '>)', patterns[pattern] + ')');
-                    }
+            for (const pattern in patterns) {
+                if (patterns.hasOwnProperty(pattern)) {
+                    path = path.replace('<' + pattern + '>)', patterns[pattern] + ')');
+                }
+            }
+
+            const params = pathinfo.match(new RegExp('^' + path + '$'));
+
+            if (params !== null) {
+                callback = routes[method] || routes.ANY;
+
+                if (!callback) {
+                    code = 405;
                 }
 
-                const params = pathinfo.match(new RegExp('^' + path + '$'));
+                setTimeout(() => {
+                    this.teenyDispatch(request, response, method, pathinfo, callback, code, code === 200 ? params.groups : null);
+                }, 0);
 
-                if (params !== null) {
-                    callback = routes[method] || routes.ANY;
-
-                    if (!callback) {
-                        code = 405;
-                    }
-
-                    setTimeout(() => {
-                        this.teenyDispatch(request, response, method, pathinfo, callback, code, code === 200 ? params.groups : null);
-                    }, 0);
-
-                    return;
-                }
+                return;
             }
         }
 

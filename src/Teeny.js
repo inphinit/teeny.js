@@ -20,7 +20,7 @@ const paramPatterns = {
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.6
+ * @version  0.1.7
  * @see      {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
@@ -61,22 +61,30 @@ class Teeny
      */
     action(methods, path, callback)
     {
-        if (Array.isArray(methods)) {
-            for (const method of methods) {
-                this.action(method, path, callback);
-            }
-        } else {
-            path = '/' + path.replace(/^\/+?/, '');
+        let routes;
 
-            if (!this.routes[path]) {
-                this.routes[path] = [];
-            }
+        path = '/' + path.replace(/^\/+?/, '');
 
-            if (path.indexOf('<') !== -1 && callback) {
+        if (path.indexOf('<') !== -1) {
+            routes = this.paramRoutes;
+
+            if (callback) {
                 this.hasParams = true;
             }
+        } else {
+            routes = this.routes;
+        }
 
-            this.routes[path][methods.toUpperCase()] = callback;
+        if (!this.routes[path]) {
+            routes[path] = [];
+        }
+
+        if (Array.isArray(methods)) {
+            for (const method of methods) {
+                routes[path][method.toUpperCase()] = callback;
+            }
+        } else {
+            routes[path][methods.toUpperCase()] = callback;
         }
     }
 
@@ -453,6 +461,7 @@ class Teeny
         this.publicPath = null;
         this.codes = [];
         this.routes = [];
+        this.paramRoutes = [];
         this.require = require;
         this.hasParams = false;
         this.paramPatterns = Object.assign({}, paramPatterns);

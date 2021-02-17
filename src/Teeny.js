@@ -218,7 +218,7 @@ class Teeny
         const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]', 'g');
 
         let callback;
-        let code = 200;
+        let code = 404;
 
         for (let path in this.paramRoutes) {
             if (this.paramRoutes.hasOwnProperty(path) === false) continue;
@@ -238,19 +238,19 @@ class Teeny
             if (params !== null) {
                 callback = routes[method] || routes.ANY;
 
-                if (!callback) {
+                if (callback) {
+                    setTimeout(() => {
+                        this.teenyDispatch(request, response, method, pathinfo, callback, code, params.groups);
+                    }, 0);
+
+                    return;
+                } else {
                     code = 405;
                 }
-
-                setTimeout(() => {
-                    this.teenyDispatch(request, response, method, pathinfo, callback, code, code === 200 ? params.groups : null);
-                }, 0);
-
-                return;
             }
         }
 
-        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, null, 404, null), 0);
+        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, null, code, null), 0);
     }
 
     async teenyDispatch(request, response, method, path, callback, code, params)

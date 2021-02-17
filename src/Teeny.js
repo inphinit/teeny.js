@@ -20,7 +20,7 @@ const paramPatterns = {
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.8
+ * @version  0.1.9
  * @see      {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny

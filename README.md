@@ -104,6 +104,7 @@ Method | Description
 `app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
 `app.setPublic(String path)` | Define path for use static files
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
+`app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
 `app.setRequire(String path)` | Set require path for load modules, this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
 `app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
 `app.stop(): Promise<Object>` | Stops server, promise returns server info
@@ -114,14 +115,14 @@ You can create your own patterns to use with the routes in "Teeny.js", but there
 
 Pattern | Regex used | Description
 --- | --- | ---
-`alnum` | `[\\da-zA-Z]+` | Matches routes with param using alpha-numeric in route
+`alnum` | `[\da-zA-Z]+` | Matches routes with param using alpha-numeric in route
 `alpha` | `[a-zA-Z]+` | Matches routes with param using A to Z letters in route
-`decimal` | `\\d+\\.\\d+` | Matches routes with param using decimal format (like `1.2`, `3.5`, `100.50`) in route
-`num` | `\\d+` | Matches routes with param using numeric format in route
-`noslash` | `[^\\/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
-`nospace` | `\\S+` | Matches routes with param using any character except spaces, tabs or NUL in route
+`decimal` | `\d+\.\d+` | Matches routes with param using decimal format (like `1.2`, `3.5`, `100.50`) in route
+`num` | `\d+` | Matches routes with param using numeric format in route
+`noslash` | `[^\/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
+`nospace` | `\S+` | Matches routes with param using any character except spaces, tabs or NUL in route
 `uuid` | `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}` | Matches routes with param using uuid format in route
-`version` | `\\d+\\.\\d+(\\.\\d+(-[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*(\\+[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*)?)?)?` | Matches routes with param using [`semver.org`](https://semver.org/) format in route
+`version` | `\d+\.\d+(\.\d+(-[\da-zA-Z]+(\.[\da-zA-Z]+)*(\+[\da-zA-Z]+(\.[\da-zA-Z]+)*)?)?)?` | Matches routes with param using [`semver.org`](https://semver.org/) format in route
 
 For use a pattern in routes, set like this:
 

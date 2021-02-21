@@ -19,9 +19,8 @@ const paramPatterns = {
 /**
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
- * @author   Guilherme Nascimento <brcontainer@yahoo.com.br>
- * @version  0.1.9
- * @see      {@link https://github.com/inphinit/teeny|GitHub}
+ * @author  Guilherme Nascimento <brcontainer@yahoo.com.br>
+ * @see     {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
 {
@@ -71,6 +70,8 @@ class Teeny
             if (callback) {
                 this.hasParams = true;
             }
+
+            path = path.replace(/([\^$|[\]():<>!?/\\])/g, '\\$1');
         } else {
             routes = this.routes;
         }
@@ -132,6 +133,11 @@ class Teeny
         if (regex === null) {
             delete this.paramPatterns[pattern];
         } else {
+            if (regex instanceof RegExp) {
+                regex = String(regex);
+                regex = regex.substr(1, regex.lastIndexOf('/') - 1);
+            }
+
             this.paramPatterns[pattern] = regex;
         }
     }
@@ -215,9 +221,10 @@ class Teeny
     teenyParams(request, response, method, pathinfo)
     {
         const patterns = this.paramPatterns;
-        const getParams = new RegExp('[<](.*?)(\\:(' + Object.keys(patterns).join('|') + ')|)[>]', 'g');
+        const getParams = new RegExp('\\\\[<]([A-Za-z]\\w+)(\\\\:(' + Object.keys(patterns).join('|') + ')|)\\\\[>]', 'g');
 
         let callback;
+        let params = null;
         let code = 404;
 
         for (let path in this.paramRoutes) {
@@ -233,24 +240,23 @@ class Teeny
                 }
             }
 
-            const params = pathinfo.match(new RegExp('^' + path + '$'));
+            const found = pathinfo.match(new RegExp('^' + path + '$'));
 
-            if (params !== null) {
+            if (found !== null) {
                 callback = routes[method] || routes.ANY;
 
                 if (callback) {
-                    setTimeout(() => {
-                        this.teenyDispatch(request, response, method, pathinfo, callback, code, params.groups);
-                    }, 0);
-
-                    return;
+                    params = found.groups;
+                    code = 200;
                 } else {
                     code = 405;
                 }
+
+                break;
             }
         }
 
-        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, null, code, null), 0);
+        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, callback, code, params), 0);
     }
 
     async teenyDispatch(request, response, method, path, callback, code, params)
@@ -371,8 +377,8 @@ class Teeny
         }
 
         const method = request.method;
-        const path = request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1);
 
+        let path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
         let code;
 
         if (this.publicPath) {

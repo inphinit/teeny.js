@@ -1,6 +1,6 @@
 {
     "name": "teeny.js",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "description": "A teeny, lightweight and fast route system",
     "main": "src/Teeny.js",
     "scripts": {

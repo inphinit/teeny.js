@@ -13,6 +13,7 @@ const mimes = {
     atom: 'application/atom+xml',
     au: 'audio/basic',
     avi: 'video/x-msvideo',
+    avif: 'image/avif',
     azw: 'application/vnd.amazon.ebook',
     bcpio: 'application/x-bcpio',
     bmp: 'image/bmp',

@@ -94,7 +94,7 @@ node index.js
 ## Methods for config Teeny.js
 
 Method | Description
---- | ------
+--- | ---
 `new Teeny(String routesPath, Number port)` | configure routes (or others methods from class) and port
 `new Teeny(String routesPath, Object config)` | configure routes and server config on second param (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
 `app.action(String\|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
@@ -105,7 +105,7 @@ Method | Description
 `app.setPublic(String path)` | Define path for use static files
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
 `app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
-`app.setRequire(String path)` | Set require path for load modules, this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
+`app.setRequire(Function require)` | Set require path for load modules using `createRequire()` or `createRequireFromPath()`. **Note:** this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
 `app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
 `app.stop(): Promise<Object>` | Stops server, promise returns server info
 
@@ -184,60 +184,58 @@ app.action('GET', '/foo/bar/download', (request, response) => {
 
 ```
 
-## Set require function in Node.js v12.2.0+
+## Require module with routes
 
-Set path from current script using `module.createRequire`:
+You can set up a require function in the context of routes to load modules via routes
+
+If you want to configure from the script called do:
+
+``` javascript
+const app = new Teeny('./routes.js', 7000);
+
+app.setRequire(require);
+```
+
+You can also configure it in the routes file, that way if you need to edit the file and change the require it will not be necessary to restart the application:
+
+``` javascript
+module.exports = (app) => {
+    // (Optional) Define require function for load modules in router context for load
+    app.setRequire(require);
+
+    app.action('GET', '/', './module.js');
+
+...
+```
+
+If you want to customize the path you can use `module.createRequire` (v12.2.0+).
+
+### Set require function in Node.js v12.2.0+
+
+Defines a custom path from which to locate your modules using `module.createRequire`:
 
 ``` javascript
 const { createRequire } = require('module');
-const { Teeny } = require('Teeny.js');
 
-const app = new Teeny('./routes.js', 7000);
+module.exports = (app) => {
+    app.setRequire(createRequire('/foo/bar/baz/.'));
 
-app.setRequire(createRequire('/foo/bar/baz/.'));
+    app.action('GET', '/', './module.js');
 
-app.exec();
+...
 ```
 
-Using "ECMAScript modules" for load from same level path (like: `__dirname`):
+### Set require function in old Node.js versions
 
-``` javascript
-import { Teeny } from 'Teeny.js';
-import { createRequire } from 'module';
-
-const app = new Teeny('./routes.js', 7000);
-
-app.setRequire(createRequire(import.meta.url));
-
-app.exec();
-```
-
-## Set require function in old Node.js versions
-
-Set path from current script using `module.createRequireFromPath` (deprecated):
+Defines a custom path from which to locate your modules using `module.createRequireFromPath` (deprecated):
 
 ``` javascript
 const { createRequireFromPath } = require('module');
-const { Teeny } = require('teeny.js');
 
-const app = new Teeny('./routes.js', 7000);
+module.exports = (app) => {
+    app.setRequire(createRequireFromPath('/foo/bar/baz/.'));
 
-app.setRequire(createRequireFromPath('/foo/bar/baz/.'));
+    app.action('GET', '/', './module.js');
 
-app.exec();
-```
-
-Using "ECMAScript modules":
-
-``` javascript
-import { Teeny } from 'Teeny.js';
-import { createRequireFromPath } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const app = new Teeny('./routes.js', 7000);
-
-app.setRequire(createRequireFromPath('/foo/bar/baz/.'));
-
-app.exec();
+...
 ```

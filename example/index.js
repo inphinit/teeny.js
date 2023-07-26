@@ -1,4 +1,4 @@
-const { Teeny } = require('teeny.js');
+const { Teeny } = require('../src/Teeny.js');
 
 const app = new Teeny(`${__dirname}/routes.js`, 7000);
 

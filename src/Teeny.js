@@ -149,7 +149,11 @@ class Teeny
      */
     setRequire(require)
     {
-        this.require = require;
+        if (typeof require === 'function' && 'resolve' in require) {
+            this.require = require;
+        } else if (this.debug) {
+            console.error(new Error('Invalid require function, try uses `module.createRequire(filename)`'));
+        }
     }
 
     /**
@@ -287,9 +291,7 @@ class Teeny
 
                 this.teenyInfo(method, path, code || 200);
             } catch (ee) {
-                if (this.debug) {
-                    this.teenyInfo(method, path, 500, ee);
-                }
+                this.teenyInfo(method, path, 500, ee);
                 
                 const callback = this.codes[500];
 
@@ -337,9 +339,7 @@ class Teeny
             if (code === 'EACCES' || code === 'EPERM') {
                 return 403;
             } else if (code !== 'ENOENT') {
-                if (this.debug) {
-                    this.teenyInfo(method, path, 500, ee);
-                }
+                this.teenyInfo(method, path, 500, ee);
 
                 return 500;
             }

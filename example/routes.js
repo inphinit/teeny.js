@@ -2,7 +2,10 @@ module.exports = (app) => {
     // Enable (or disable) debug mode
     app.setDebug(true);
 
-    app.handlerCodes([ 403, 404, 405, 500 ], (status) => {
+    // Define require function for load from current path
+    app.setRequire(require);
+
+    app.handlerCodes([403, 404, 405, 500], (status) => {
         return `Error page: ${status}`;
     });
 

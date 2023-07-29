@@ -102,6 +102,7 @@ Method | Description
 `app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
 `app.handlerCodes(Array codes, String module)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
 `app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
+`app.setDefaultCharset(String charset)` | Define the default charset for use with text/html (route pages, errors) or text/plain (static files)
 `app.setPublic(String path)` | Define path for use static files
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
 `app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
@@ -148,40 +149,52 @@ When loading in a variable directly all the contents of a file to send with "ret
 
 ``` javascript
 app.action('GET', '/foo/bar/download', (request, response) => {
-    if (/* condition for allow access file */) {
-        const file = '/home/user/foo/bar/storage/big.file';
-        const lstat = fs.lstatSync(file);
+    const file = '/home/user/foo/bar/storage/big.file';
+    const lstat = fs.lstatSync(file);
 
-        // Check is exists and if is file
-        if (lstat.isFile()) {
+    // Create a stream for big.file
+    const stream = fs.createReadStream(file);
 
-            // Create a stream for big.file
-            const streamFileExample = fs.createReadStream(file);
+    // Check is exists and if is file
+    if (lstat.isFile()) {
+        // Create a stream for big.file
+        const stream = fs.createReadStream(file);
 
-            // Trigger when open the stream
-            streamFileExample.on('open', () => {
+        // Sent file size with Content-Length in header
+        response.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': lstat.size
+        });
 
-                // Sent file size with Content-Length in header
-                response.writeHead(200, {
-                    'Content-Length': lstat.size
-                });
-
-                // Uses .pipe() for sent data for response
-                streamFileExample.pipe(response);
-            });
-
-            // If failed sent 500 HTTP status
-            streamFileExample.on('error', (err) => {
-                response.writeHead(500);
-                response.end(err);
-            });
-        }
+        // Uses .pipe() for sent data for response
+        stream.pipe(response);
     } else {
         response.writeHead(404);
         response.end('Invalid file');
     }
 });
+```
 
+## Return response
+
+Callback supports `string`, `Buffer` and `Uint8Array`
+
+``` javascript
+app.action('GET', '/string', () => {
+    return 'My string';
+});
+
+app.action('GET', '/buffer', () => {
+    return Buffer.alloc(25, 'aGVsbG8gd29ybGQgKGZyb20gYnVmZmVyKQ==', 'base64');
+});
+
+app.action('GET', '/uint8array', () => {
+    return new Uint8Array([
+      102, 114, 111, 109, 32,
+      85,  105, 110, 116, 56,
+      65,  114, 114, 97, 121
+    ]);
+});
 ```
 
 ## Require module with routes

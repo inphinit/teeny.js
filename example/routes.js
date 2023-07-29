@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 module.exports = (app) => {
     // Enable (or disable) debug mode
     app.setDebug(true);
@@ -5,22 +7,55 @@ module.exports = (app) => {
     // Define require function for load from current path
     app.setRequire(require);
 
-    app.handlerCodes([403, 404, 405, 500], (status) => {
+    // Define default charset
+    // app.setDefaultCharset('ISO-8859-1');
+
+    app.handlerCodes([403, 404, 405, 500], (request, response, status) => {
         return `Error page: ${status}`;
     });
 
     // Access static files from ./public folder
     app.setPublic(`${__dirname}/public`);
 
-    // Access http://localhost:7000/ for see "Hello world"
+    // Access http://localhost:7000/ for see all paths
     app.action('GET', '/', (request, response) => {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Teeny.js</title>
+</head>
+<body>
+<ul>
+    <li><a href="/helloworld">/helloworld</a></li>
+    <li><a href="/async">/async</a></li>
+    <li><a href="/user/foobar1">/user/foobar1</a></li>
+    <li><a href="/module">/module</a></li>
+    <li><a href="/error">/error</a></li>
+    <li><a href="/api/3.0">/api/&lt;foobar:version></a></li>
+    <li><a href="/product/2000">/product/&lt;id:num></a></li>
+    <li>
+        <form method="POST" action="/blog/foobar-90">
+            <button>
+                /blog/&lt;title>-&lt;id:num>
+            </button>
+        </form>
+    </li>
+    <li><a href="/custom/A1200">/custom/&lt;myexample:example></a></li>
+</ul>
+</body>
+</html>`;
+    });
+
+    // Access http://localhost:7000/helloworld for see "Hello world"
+    app.action('GET', '/helloworld', (request, response) => {
         return 'Hello World!';
     });
 
     // Access http://localhost:7000/async for see response from a async function
     app.action('GET', '/async', async (request, response) => {
         const result = new Promise((resolve) => setTimeout(resolve, 1000, `Async working ${new Date()}!`));
-
         return result;
     });
 
@@ -30,10 +65,10 @@ module.exports = (app) => {
     });
 
     // Access http://localhost:7000/module for load and executes include.js module
-    app.action('GET', '/module', `./include.js`);
+    app.action('GET', '/module', './include.js');
 
     // Access http://localhost:7000/error for load and executes error.js module with error
-    app.action('GET', '/error', `./error.js`);
+    app.action('GET', '/error', './error.js');
 
     // Access http://localhost:7000/api/2.0
     app.action('GET', '/api/<foobar:version>', (request, response, params) => {
@@ -57,5 +92,19 @@ module.exports = (app) => {
     app.action('GET', '/custom/<myexample:example>', (request, response, params) => {
         return `<h1>custom pattern</h1>
         <pre>${JSON.stringify(params, null, 4)}</pre>`;
+    });
+
+    // Supports Buffer
+    app.action('GET', '/buffer', (request, response) => {
+        return Buffer.alloc(25, 'aGVsbG8gd29ybGQgKGZyb20gYnVmZmVyKQ==', 'base64');
+    });
+
+    // Supports Uint8Array
+    app.action('GET', '/uint8array', (request, response) => {
+        return new Uint8Array([
+          102, 114, 111, 109, 32,
+          85,  105, 110, 116, 56,
+          65,  114, 114, 97, 121
+        ]);
     });
 };

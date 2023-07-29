@@ -27,8 +27,8 @@ class Teeny
     /**
      * Configure server
      *
-     * @param {string}           routePath  Define public path for static files
-     * @param {(number|object)}  config     Define port or config server (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
+     * @param {string}           routePath  Set the routes file
+     * @param {(number|object)}  config     Set port or server configuration (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
      */
     constructor(routesPath, config)
     {
@@ -44,8 +44,10 @@ class Teeny
 
         this.teenyResetSettings();
 
+        this.defaultCharset = 'UTF-8';
+
         this.defaultType = {
-            'Content-Type': 'text/html; charset=utf-8'
+            'Content-Type': 'text/html; charset=' + this.defaultCharset
         };
 
         this.updateRoutes = 0;
@@ -54,9 +56,9 @@ class Teeny
     /**
      * Register or remove a callback or script for a route
      *
-     * @param {(string|array)}  method    Define http method(s)
-     * @param {string}          path      Define path
-     * @param {*}               callback  Define function or module
+     * @param {(string|array)}  method    Set the http method(s)
+     * @param {string}          path      Set the path
+     * @param {*}               callback  Set the function or module
      */
     action(methods, path, callback)
     {
@@ -92,8 +94,8 @@ class Teeny
     /**
      * Handler HTTP status code from ISAPI (from apache2handler or fast-cgi)
      *
-     * @param {array}  codes     Define code errors
-     * @param {*}      callback  Define function or module
+     * @param {array}  codes     Set code errors
+     * @param {*}      callback  Set function or module
      */
     handlerCodes(codes, callback)
     {
@@ -113,7 +115,7 @@ class Teeny
     }
 
     /**
-     * Create or remove a pattern for URL slugs
+     * Set a folder with static files that can be accessed by url
      *
      * @param {string}  path  Set public path
      */
@@ -123,10 +125,24 @@ class Teeny
     }
 
     /**
+     * Set the default charset for use with text/html (route pages, errors) or text/plain (static files)
+     *
+     * @param {string}  charset  Set default charset
+     */
+    setDefaultCharset(charset)
+    {
+        this.defaultCharset = charset;
+
+        this.defaultType = {
+            'Content-Type': 'text/html; charset=' + charset
+        };
+    }
+
+    /**
      * Create or remove a pattern for URL slugs
      *
-     * @param {(string)}       pattern  Set pattern for URL slug params like this /foo/<var:pattern>
-     * @param {(string|null)}  regex    Set regex for specif pattern
+     * @param {(string)}              pattern  Set a pattern for URL slug params like this /foo/<var:pattern>
+     * @param {(RegExp|string|null)}  regex    Set a regex to a specific pattern
      */
     setPattern(pattern, regex)
     {
@@ -143,9 +159,9 @@ class Teeny
     }
 
     /**
-     * Set require module
+     * Set a custom "require" function for load modules or route file (see: https://nodejs.org/api/module.html#modulecreaterequirefilename)
      *
-     * @param {function}  require  Set a custom require function
+     * @param {function}  require  Set a custom "require" function
      */
     setRequire(require)
     {
@@ -273,6 +289,8 @@ class Teeny
 
         if (callback) {
             try {
+                let result = null;
+
                 if (typeof callback === 'string') {
                     const cache = this.require.resolve(callback);
 
@@ -280,16 +298,20 @@ class Teeny
                         delete require.cache[cache];
                     }
 
-                    this.require(callback)(request, response, 200);
+                    this.require(callback)(request, response);
                 } else if (code !== 200) {
-                    response.write(await callback(code));
+                    result = await callback(request, response, code);
                 } else if (params !== null) {
-                    response.write(await callback(request, response, params));
+                    result = await callback(request, response, params);
                 } else {
-                    response.write(await callback());
+                    result = await callback(request, response);
                 }
 
                 this.teenyInfo(method, path, code || 200);
+
+                if (typeof result === 'undefined') return;
+
+                response.write(result);
             } catch (ee) {
                 this.teenyInfo(method, path, 500, ee);
                 
@@ -324,14 +346,28 @@ class Teeny
     teenyPublic(path, method, response)
     {
         const file = this.publicPath + path;
+        const mime = SimpleMime(path);
 
         try {
             const lstat = fs.lstatSync(file);
 
             if (lstat.isFile()) {
-                setTimeout(() => this.teenyStatic(file, lstat, response), 0);
+                const stream = fs.createReadStream(file);
+                const charset = this.defaultCharset;
 
-                return false;
+                if (charset === 'text/html' || charset === 'text/plain') {
+                    mime += '; charset=' + this.defaultCharset;
+                }
+
+                response.writeHead(200, {
+                    'Last-Modified': lstat.mtime,
+                    'Content-Length': lstat.size,
+                    'Content-Type': mime,
+                });
+
+                stream.pipe(response);
+
+                return null;
             }
         } catch (ee) {
             const code = ee.code;
@@ -340,32 +376,11 @@ class Teeny
                 return 403;
             } else if (code !== 'ENOENT') {
                 this.teenyInfo(method, path, 500, ee);
-
                 return 500;
             }
         }
 
         return 200;
-    }
-
-    teenyStatic(path, lstat, response)
-    {
-        const readStream = fs.createReadStream(path);
-
-        readStream.on('open', () => {
-            response.writeHead(200, {
-                'Content-Type': SimpleMime(path),
-                'Last-Modified': lstat.mtime,
-                'Content-Length': lstat.size
-            });
-
-            readStream.pipe(response);
-        });
-
-        readStream.on('error', (err) => {
-            response.writeHead(500, this.defaultType);
-            response.end(err);
-        });
     }
 
     teenyListen(request, response)
@@ -377,14 +392,14 @@ class Teeny
         }
 
         const method = request.method;
+        const path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
 
-        let path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
         let code;
 
         if (this.publicPath) {
             code = this.teenyPublic(path, method, response);
             
-            if (code === false) return;
+            if (code === null) return;
         } else {
             code = 200;
         }

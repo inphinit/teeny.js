@@ -28,7 +28,7 @@ class Teeny
      * Configure server
      *
      * @param {string}           routePath  Set the routes file
-     * @param {(number|object)}  config     Set port or server configuration (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
+     * @param {(number|Object)}  config     Set port or server configuration (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
      */
     constructor(routesPath, config)
     {
@@ -56,9 +56,9 @@ class Teeny
     /**
      * Register or remove a callback or script for a route
      *
-     * @param {(string|array)}  method    Set the http method(s)
-     * @param {string}          path      Set the path
-     * @param {*}               callback  Set the function or module
+     * @param {(string|string[])}  method    Set the http method(s)
+     * @param {string}             path      Set the path
+     * @param {function|null}      callback  Set the function or module
      */
     action(methods, path, callback)
     {
@@ -94,8 +94,8 @@ class Teeny
     /**
      * Handler HTTP status code from ISAPI (from apache2handler or fast-cgi)
      *
-     * @param {array}  codes     Set code errors
-     * @param {*}      callback  Set function or module
+     * @param {string[]}       codes     Set code errors
+     * @param {function|null}  callback  Set function or module
      */
     handlerCodes(codes, callback)
     {

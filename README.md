@@ -13,7 +13,7 @@
     </a>
 </div>
 
-## About Teeny.js
+# Teeny.js route system for Node.js
 
 The main objective of this project is to be light, simple, easy to learn, to serve other projects that need a route system to use together with other libraries and mainly to explore the native resources from language and engine (Node).
 

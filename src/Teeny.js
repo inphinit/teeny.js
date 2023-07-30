@@ -94,7 +94,7 @@ class Teeny
     /**
      * Handler HTTP status code from ISAPI (from apache2handler or fast-cgi)
      *
-     * @param {string[]}       codes     Set code errors
+     * @param {number[]}       codes     Set code errors
      * @param {function|null}  callback  Set function or module
      */
     handlerCodes(codes, callback)

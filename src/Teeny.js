@@ -20,6 +20,7 @@ const paramPatterns = {
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
  * @author  Guilherme Nascimento <brcontainer@yahoo.com.br>
+ * @see     {@link https://github.com/inphinit/inphinit|GitHub}
  * @see     {@link https://github.com/inphinit/teeny|GitHub}
  */
 class Teeny
@@ -187,7 +188,7 @@ class Teeny
 
                 if (!this.server) {
                     this.server = http.createServer((request, response) => {
-                        setTimeout(() => this.teenyListen(request, response), 0);
+                        this.teenyListen(request, response);
                     });
                 }
 
@@ -293,7 +294,7 @@ class Teeny
 
         if (callback) {
             try {
-                let result = null;
+                let result;
 
                 if (typeof callback === 'string') {
                     const cache = this.require.resolve(callback);
@@ -313,9 +314,7 @@ class Teeny
 
                 this.teenyInfo(method, path, code || 200);
 
-                if (typeof result === 'undefined') return;
-
-                response.write(result);
+                if (typeof result !== 'undefined') response.write(result);
             } catch (ee) {
                 this.teenyInfo(method, path, 500, ee);
 
@@ -352,9 +351,9 @@ class Teeny
         const file = this.publicPath + path;
 
         try {
-            const lstat = fs.lstatSync(file);
+            const stat = fs.lstatSync(file);
 
-            if (lstat.isFile()) {
+            if (stat.isFile()) {
                 const charset = this.defaultCharset;
 
                 let mime = SimpleMime(path);
@@ -363,7 +362,7 @@ class Teeny
                     mime += '; charset=' + charset;
                 }
 
-                this.teenyStreamFile(method, path, response, file, mime, lstat);
+                this.teenyStreamFile(method, path, response, file, mime, stat);
 
                 return null;
             }
@@ -436,10 +435,12 @@ class Teeny
         const method = request.method;
         const path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
 
-        let code = 200;
+        let code = null;
         let callback;
 
         if (this.routes[path]) {
+            code = 200;
+
             const routes = this.routes[path];
 
             if (routes[method]) {
@@ -450,25 +451,17 @@ class Teeny
                 code = 405;
             }
         } else if (this.hasParams) {
-            try {
-                if (this.teenyParams(request, response, method, path)) return;
-
-                code = null;
-            } catch (ee) {
-                if (this.debug) {
-                    console.error(ee);
-                }
-
-                code = 500;
-            }
+            if (this.teenyParams(request, response, method, path)) return;
         }
 
-        if (code === null && this.publicPath) {
-            code = this.teenyPublic(method, path, response);
+        if (code === null) {
+            if (this.publicPath) {
+                code = this.teenyPublic(method, path, response);
 
-            if (code === null) return;
-        } else {
-            code = 404;
+                if (code === null) return;
+            } else {
+                code = 404;
+            }
         }
 
         this.teenyDispatch(request, response, method, path, callback, code, null);
@@ -479,12 +472,12 @@ class Teeny
         try {
             const routesPath = this.require.resolve(this.routesPath);
 
-            const lstat = fs.lstatSync(routesPath);
+            const stat = fs.lstatSync(routesPath);
 
-            if (lstat.mtimeMs > this.updateRoutes) {
+            if (stat.mtimeMs > this.updateRoutes) {
                 this.maintenance = true;
 
-                this.updateRoutes = lstat.mtimeMs;
+                this.updateRoutes = stat.mtimeMs;
 
                 if (this.debug) {
                     console.info(`[${new Date()}]`, 'update routes');

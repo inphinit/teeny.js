@@ -29,8 +29,9 @@ module.exports = (app) => {
 <body>
 <ul>
     <li><a href="/helloworld">/helloworld</a></li>
+    <li><a href="/favicon.ico">favicon.ico (static file)</a></li>
     <li><a href="/async">/async</a></li>
-    <li><a href="/user/foobar1">/user/foobar1</a></li>
+    <li><a href="/user/foobar1">/user/&lt;username:alnum></a></li>
     <li><a href="/module">/module</a></li>
     <li><a href="/error">/error</a></li>
     <li><a href="/api/3.0">/api/&lt;foobar:version></a></li>
@@ -68,7 +69,10 @@ module.exports = (app) => {
     app.action('GET', '/module', './include.js');
 
     // Access http://localhost:7000/error for load and executes error.js module with error
-    app.action('GET', '/error', './error.js');
+    // app.action('GET', '/error', './error.js');
+    app.action('GET', '/error/<sample>', async (req, res, params) => {
+        throw new Error(params.sample);
+    });
 
     // Access http://localhost:7000/api/2.0
     app.action('GET', '/api/<foobar:version>', (request, response, params) => {

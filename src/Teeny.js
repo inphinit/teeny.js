@@ -187,13 +187,13 @@ class Teeny
 
                 if (!this.server) {
                     this.server = http.createServer((request, response) => {
-                        this.teenyListen(request, response);
+                        setTimeout(() => this.teenyListen(request, response), 0);
                     });
                 }
 
                 this.server.listen(this.config, () => {
                     this.state = this.states.STARTED;
-                    
+
                     const details = this.server.address();
 
                     if (this.debug) {
@@ -245,7 +245,7 @@ class Teeny
 
         let callback;
         let params = null;
-        let code = 404;
+        let code = null;
 
         for (let path in this.paramRoutes) {
             if (this.paramRoutes.hasOwnProperty(path) === false) continue;
@@ -276,7 +276,11 @@ class Teeny
             }
         }
 
-        setTimeout(() => this.teenyDispatch(request, response, method, pathinfo, callback, code, params), 0);
+        if (code === null) return false;
+
+        this.teenyDispatch(request, response, method, pathinfo, callback, code, params);
+
+        return true;
     }
 
     async teenyDispatch(request, response, method, path, callback, code, params)
@@ -314,7 +318,7 @@ class Teeny
                 response.write(result);
             } catch (ee) {
                 this.teenyInfo(method, path, 500, ee);
-                
+
                 const callback = this.codes[500];
 
                 if (callback) {
@@ -343,29 +347,23 @@ class Teeny
         }
     }
 
-    teenyPublic(path, method, response)
+    teenyPublic(method, path, response)
     {
         const file = this.publicPath + path;
-        const mime = SimpleMime(path);
 
         try {
             const lstat = fs.lstatSync(file);
 
             if (lstat.isFile()) {
-                const stream = fs.createReadStream(file);
                 const charset = this.defaultCharset;
 
+                let mime = SimpleMime(path);
+
                 if (charset === 'text/html' || charset === 'text/plain') {
-                    mime += '; charset=' + this.defaultCharset;
+                    mime += '; charset=' + charset;
                 }
 
-                response.writeHead(200, {
-                    'Last-Modified': lstat.mtime,
-                    'Content-Length': lstat.size,
-                    'Content-Type': mime,
-                });
-
-                stream.pipe(response);
+                this.teenyStreamFile(method, path, response, file, mime, lstat);
 
                 return null;
             }
@@ -380,7 +378,51 @@ class Teeny
             }
         }
 
-        return 200;
+        return 404;
+    }
+
+    teenyStreamFile(method, path, response, file, mime, stat)
+    {
+        const stream = fs.createReadStream(file);
+
+        let sent = false;
+
+        stream.on('open', () => {
+            if (sent) return;
+
+            sent = true;
+
+            response.writeHead(200, {
+                'Last-Modified': stat.mtime,
+                'Content-Length': stat.size,
+                'Content-Type': mime
+            });
+
+            stream.pipe(response);
+        });
+
+        stream.on('error', (ee) => {
+            if (sent) return;
+
+            sent = true;
+
+            const code = ee.code;
+
+            let status;
+
+            if (code === 'EACCES' || code === 'EPERM') {
+                status = 403;
+            } else if (code === 'ENOENT') {
+                status = 404;
+            } else {
+                status = 500;
+            }
+
+            response.writeHead(status, this.defaultType);
+            response.end();
+
+            this.teenyInfo(method, path, status, ee);
+        });
     }
 
     teenyListen(request, response)
@@ -394,42 +436,39 @@ class Teeny
         const method = request.method;
         const path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
 
-        let code;
-
-        if (this.publicPath) {
-            code = this.teenyPublic(path, method, response);
-            
-            if (code === null) return;
-        } else {
-            code = 200;
-        }
-
+        let code = 200;
         let callback;
 
-        if (code === 200) {
-            if (this.routes[path]) {
-                const routes = this.routes[path];
+        if (this.routes[path]) {
+            const routes = this.routes[path];
 
-                if (routes[method]) {
-                    callback = routes[method];
-                } else if (routes.ANY) {
-                    callback = routes.ANY;
-                } else {
-                    code = 405;
-                }
-            } else if (this.hasParams) {
-                try {
-                    return this.teenyParams(request, response, method, path);
-                } catch (ee) {
-                    if (this.debug) {
-                        console.error(ee);
-                    }
-
-                    code = 500;
-                }
+            if (routes[method]) {
+                callback = routes[method];
+            } else if (routes.ANY) {
+                callback = routes.ANY;
             } else {
-                code = 404;
+                code = 405;
             }
+        } else if (this.hasParams) {
+            try {
+                if (this.teenyParams(request, response, method, path)) return;
+
+                code = null;
+            } catch (ee) {
+                if (this.debug) {
+                    console.error(ee);
+                }
+
+                code = 500;
+            }
+        }
+
+        if (code === null && this.publicPath) {
+            code = this.teenyPublic(method, path, response);
+
+            if (code === null) return;
+        } else {
+            code = 404;
         }
 
         this.teenyDispatch(request, response, method, path, callback, code, null);

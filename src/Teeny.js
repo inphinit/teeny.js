@@ -398,6 +398,8 @@ class Teeny
             });
 
             stream.pipe(response);
+
+            this.teenyInfo(method, path, 200);
         });
 
         stream.on('error', (ee) => {

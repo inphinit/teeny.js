@@ -310,8 +310,10 @@ class Teeny
                         delete require.cache[cache];
                     }
 
-                    this.require(callback)(request, response);
-                } else if (code !== 200) {
+                    callback = this.require(callback);
+                }
+
+                if (code !== 200) {
                     result = await callback(request, response, code);
                 } else if (params !== null) {
                     result = await callback(request, response, params);

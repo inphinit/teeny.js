@@ -36,7 +36,7 @@ module.exports = (app) => {
     <li><a href="/timeout">/timeout (5s)</a></li>
     <li><a href="/async">/async</a></li>
     <li><a href="/user/foobar1">/user/&lt;username:alnum></a></li>
-    <li><a href="/module">/module</a></li>
+    <li><a href="/module/100/john">/module/&lt;id:num>/&lt;name></a></li>
     <li><a href="/error/foobar">/error/<message></a></li>
     <li><a href="/api/3.0">/api/&lt;foobar:version></a></li>
     <li><a href="/product/2000">/product/&lt;id:num></a></li>
@@ -96,7 +96,7 @@ module.exports = (app) => {
     });
 
     // Access http://localhost:7000/module for load and executes include.js module
-    app.action('GET', '/module', './include.js');
+    app.action('GET', '/module/<id:num>/<name>', './include.js');
 
     // Access http://localhost:7000/error for load and executes error.js module with error
     // app.action('GET', '/error', './error.js');

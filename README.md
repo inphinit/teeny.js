@@ -128,6 +128,8 @@ module.exports = (app) => {
     ...
 ```
 
+> **Note:** See [example](./example)
+
 ## Methods for config Teeny.js
 
 Method | Description

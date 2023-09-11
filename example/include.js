@@ -1,4 +1,4 @@
-module.exports = function (request, response, status) {
-    response.write('Module example'); 
-    response.end();
+module.exports = function (request, response, params) {
+    response.write(`Hello ${params.name}<br>`);
+    response.end(`ID: ${params.id}`);
 };

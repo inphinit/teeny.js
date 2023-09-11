@@ -157,6 +157,8 @@ class Teeny
 
             this.paramPatterns[pattern] = regex;
         }
+
+        this.teenyRefreshPatterns();
     }
 
     /**
@@ -239,10 +241,15 @@ class Teeny
         });
     }
 
+    teenyRefreshPatterns()
+    {
+        this.paramPatternsRE = new RegExp('\\\\[<]([A-Za-z]\\w+)(\\\\:(' + Object.keys(this.paramPatterns).join('|') + ')|)\\\\[>]', 'g');
+    }
+
     teenyParams(request, response, method, pathinfo)
     {
         const patterns = this.paramPatterns;
-        const getParams = new RegExp('\\\\[<]([A-Za-z]\\w+)(\\\\:(' + Object.keys(patterns).join('|') + ')|)\\\\[>]', 'g');
+        const getParams = this.paramPatternsRE;
 
         let callback;
         let params = null;
@@ -314,7 +321,10 @@ class Teeny
 
                 this.teenyInfo(method, path, code || 200);
 
-                if (typeof result !== 'undefined') response.write(result);
+                if (typeof result !== 'undefined') {
+                    response.write(result);
+                    response.end();
+                }
             } catch (ee) {
                 this.teenyInfo(method, path, 500, ee);
 
@@ -322,16 +332,14 @@ class Teeny
 
                 if (callback) {
                     this.teenyDispatch(request, response, method, path, callback, 500, null);
-                    return;
                 } else {
                     response.writeHead(500, this.defaultType);
+                    response.end();
                 }
             }
         } else {
             this.teenyInfo(method, path, code);
         }
-
-        response.end();
     }
 
     teenyInfo(method, path, code, error)
@@ -518,6 +526,8 @@ class Teeny
         this.require = require;
         this.hasParams = false;
         this.paramPatterns = Object.assign({}, paramPatterns);
+
+        this.teenyRefreshPatterns();
     }
 }
 

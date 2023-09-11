@@ -500,8 +500,11 @@ body .markdown-body
   padding-bottom: 0.2em;
   margin: 0;
   font-size: 85%;
-  background-color: rgba(0,0,0,0.04);
   border-radius: 3px;
+}
+
+.markdown-body code:not(.highlight):not(.codehilite), .markdown-body samp {
+  background-color: rgba(0,0,0,0.04);
 }
 
 .markdown-body code:before,
@@ -532,8 +535,16 @@ body .markdown-body
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;
-  background-color: #f7f7f7;
+}
+
+.markdown-body .codehilite,
+.markdown-body .highlight,
+.markdown-body pre {
   border-radius: 3px;
+}
+
+.markdown-body :not(.highlight) > pre {
+  background-color: #f7f7f7;
 }
 
 .markdown-body .codehilite pre,
@@ -1003,7 +1014,7 @@ body .markdown-body
   }
 }
 </style><style>/*GitHub*/
-.highlight {background-color:#fff;color:#333333;}
+.highlight {background-color:#f7f7f7;color:#333333;}
 .highlight .hll {background-color:#ffffcc;}
 .highlight .c{color:#999988;font-style:italic}
 .highlight .err{color:#a61717;background-color:#e3d2d2}
@@ -1102,7 +1113,7 @@ npm init
 <p>In example create you can use <code>index.js</code> or other and put routes in a script named <code>routes.js</code> (or other name), example:</p>
 <div class="highlight"><pre><span class="kr">const</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;teeny.js&#39;</span><span class="p">);</span>
 
-<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="s1">`${__dirname}/routes.js`</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">__dirname</span><span class="p">}</span><span class="o">/</span><span class="nx">routes</span><span class="p">.</span><span class="nx">js</span><span class="err">`</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">exec</span><span class="p">();</span>
 </pre></div>
@@ -1120,7 +1131,13 @@ npm init
 <span class="p">};</span>
 </pre></div>
 
-<p>For config routes or others edits the <code>routes.js</code>, when saving to the file teeny himself will update the routes without having to restart the server. Uses <code>app.setDebug(...);</code> method for enable or disable debug mode (<code>false</code> by default), example:</p>
+<p><strong>Note:</strong> When editing anything in the <code>routes.js</code> file (or any file you have configured in the <code>routesPath</code> parameter in <code>new Teeny(String routesPath, ...)</code>), the application itself will detect the update and apply it, <strong>eliminating the need to restart the application</strong>. In the meantime, the server will send HTTP status <em>503 Service Unavailable</em> to the client.</p>
+<p>For start application use command:</p>
+<div class="highlight"><pre>node index.js
+</pre></div>
+
+<h2 id="debug-mode">Debug mode<a class="headerlink" href="#debug-mode" title="Permanent link"></a></h2>
+<p>Uses <code>app.setDebug(...);</code> method for enable or disable debug mode (<code>false</code> by default), example:</p>
 <div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
     <span class="c1">// Enable debug</span>
     <span class="nx">app</span><span class="p">.</span><span class="nx">setDebug</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
@@ -1129,11 +1146,33 @@ npm init
         <span class="k">return</span> <span class="s1">&#39;Hello World!&#39;</span><span class="p">;</span>
     <span class="p">});</span>
 
-<span class="p">...</span>
+    <span class="p">...</span>
 </pre></div>
 
-<p>For start application use command:</p>
-<div class="highlight"><pre>node index.js
+<h2 id="delivering-responses">Delivering responses<a class="headerlink" href="#delivering-responses" title="Permanent link"></a></h2>
+<p>In the third parameter (callback) you can send the response to the client in two ways, using <code>return</code> passing a value that can be converted into a string (Promises that return values are also supported):</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s1">&#39;Hello!&#39;</span>
+    <span class="p">});</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<p>Or you can use the second parameter (<code>response</code>) received in the callback, this way you can work with other functions that use callback (eg.: <code>setTimeout</code>), for example:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">&#39;Hello!&#39;</span><span class="p">),</span> <span class="mi">1000</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<p>In the case of <code>return</code>, if you are using arrowfunction and it does not execute anything other than the return, you can pass the value directly, for example:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="s1">&#39;Hello!&#39;</span><span class="p">);</span>
+
+    <span class="p">...</span>
 </pre></div>
 
 <h2 id="methods-for-config-teenyjs">Methods for config Teeny.js<a class="headerlink" href="#methods-for-config-teenyjs" title="Permanent link"></a></h2>
@@ -1154,11 +1193,11 @@ npm init
 <td>configure routes and server config on second param (see: <a href="https://nodejs.org/api/net.html#net_server_listen_options_callback">https://nodejs.org/api/net.html#net_server_listen_options_callback</a>)</td>
 </tr>
 <tr>
-<td><code>app.action(String|Array methods, String path, Function callback)</code></td>
+<td><code>app.action(String\|Array methods, String path, Function callback)</code></td>
 <td>Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function</td>
 </tr>
 <tr>
-<td><code>app.action(String|Array methods, String path, String module)</code></td>
+<td><code>app.action(String\|Array methods, String path, String module)</code></td>
 <td>Define a route for load and execute other &ldquo;local&rdquo; module (it is recommended to set the absolute path)</td>
 </tr>
 <tr>
@@ -1259,15 +1298,15 @@ npm init
 <p>For use a pattern in routes, set like this:</p>
 <div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
     <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/user/&lt;name:alnum&gt;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">params</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s1">`Hello ${params.alnum}`</span><span class="p">;</span>
+        <span class="k">return</span> <span class="err">`</span><span class="nx">Hello</span> <span class="nx">$</span><span class="p">{</span><span class="nx">params</span><span class="p">.</span><span class="nx">alnum</span><span class="p">}</span><span class="err">`</span><span class="p">;</span>
     <span class="p">});</span>
 
     <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/api/&lt;foobar:version&gt;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">params</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s1">`Version: ${params.foobar}`</span><span class="p">;</span>
+        <span class="k">return</span> <span class="err">`</span><span class="nx">Version</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">params</span><span class="p">.</span><span class="nx">foobar</span><span class="p">}</span><span class="err">`</span><span class="p">;</span>
     <span class="p">});</span>
 
     <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/product/&lt;id:num&gt;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">params</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s1">`Product ID: ${params.id}`</span><span class="p">;</span>
+        <span class="k">return</span> <span class="err">`</span><span class="nx">Product</span> <span class="nx">ID</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">params</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="err">`</span><span class="p">;</span>
     <span class="p">});</span>
 <span class="p">...</span>
 </pre></div>

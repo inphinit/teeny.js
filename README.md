@@ -71,7 +71,17 @@ module.exports = (app) => {
 };
 ```
 
-For config routes or others edits the `routes.js`, when saving to the file teeny himself will update the routes without having to restart the server. Uses `app.setDebug(...);` method for enable or disable debug mode (`false` by default), example:
+**Note:** When editing anything in the `routes.js` file (or any file you have configured in the `routesPath` parameter in `new Teeny(String routesPath, ...)`), the application itself will detect the update and apply it, **eliminating the need to restart the application**. In the meantime, the server will send HTTP status *503 Service Unavailable* to the client.
+
+For start application use command:
+
+```
+node index.js
+```
+
+## Debug mode
+
+Uses `app.setDebug(...);` method for enable or disable debug mode (`false` by default), example:
 
 ``` javascript
 module.exports = (app) => {
@@ -82,13 +92,40 @@ module.exports = (app) => {
         return 'Hello World!';
     });
 
-...
+    ...
 ```
 
-For start application use command:
+## Delivering responses
 
+In the third parameter (callback) you can send the response to the client in two ways, using `return` passing a value that can be converted into a string (Promises that return values are also supported):
+
+``` javascript
+module.exports = (app) => {
+    app.action('GET', '/', (request, response) => {
+        return 'Hello!'
+    });
+
+    ...
 ```
-node index.js
+
+Or you can use the second parameter (`response`) received in the callback, this way you can work with other functions that use callback (eg.: `setTimeout`), for example:
+
+``` javascript
+module.exports = (app) => {
+    app.action('GET', '/', (request, response) => {
+        setTimeout(() => response.end('Hello!'), 1000);
+    });
+
+    ...
+```
+
+In the case of `return`, if you are using arrowfunction and it does not execute anything other than the return, you can pass the value directly, for example:
+
+``` javascript
+module.exports = (app) => {
+    app.action('GET', '/', (request, response) => 'Hello!');
+
+    ...
 ```
 
 ## Methods for config Teeny.js

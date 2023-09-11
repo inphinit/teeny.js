@@ -29,11 +29,15 @@ module.exports = (app) => {
 <body>
 <ul>
     <li><a href="/helloworld">/helloworld</a></li>
+    <li><a href="/helloworld2">/helloworld2</a></li>
+    <li><a href="/helloworld3">/helloworld3</a></li>
+    <li><a href="/helloworld4">/helloworld4</a></li>
     <li><a href="/favicon.ico">favicon.ico (static file)</a></li>
+    <li><a href="/timeout">/timeout (5s)</a></li>
     <li><a href="/async">/async</a></li>
     <li><a href="/user/foobar1">/user/&lt;username:alnum></a></li>
     <li><a href="/module">/module</a></li>
-    <li><a href="/error">/error</a></li>
+    <li><a href="/error/foobar">/error/<message></a></li>
     <li><a href="/api/3.0">/api/&lt;foobar:version></a></li>
     <li><a href="/product/2000">/product/&lt;id:num></a></li>
     <li>
@@ -44,6 +48,9 @@ module.exports = (app) => {
         </form>
     </li>
     <li><a href="/custom/A1200">/custom/&lt;myexample:example></a></li>
+    <li><a href="/status/201">/status/&lt;code:num></a></li>
+    <li><a href="/buffer">/buffer</a></li>
+    <li><a href="/uint8array">/uint8array</a></li>
 </ul>
 </body>
 </html>`;
@@ -52,6 +59,29 @@ module.exports = (app) => {
     // Access http://localhost:7000/helloworld for see "Hello world"
     app.action('GET', '/helloworld', (request, response) => {
         return 'Hello World!';
+    });
+
+    // Access http://localhost:7000/helloworld2 for see "Hello world"
+    app.action('GET', '/helloworld2', (request, response) => 'Hello World 2!');
+
+    // Access http://localhost:7000/helloworld3 for see "Hello world"
+    app.action('GET', '/helloworld3', (request, response) => {
+        response.write('Hello World 3!\n');
+        response.end();
+    });
+
+    // Access http://localhost:7000/helloworld4 for see "Hello world"
+    app.action('GET', '/helloworld4', (request, response) => {
+        response.writeHead(201, { 'Content-Type': 'text/plain' });
+        response.end('Hello World 4!');
+    });
+
+    // Access http://localhost:7000/timeout for see "Hello world"
+    app.action('GET', '/timeout', (request, response) => {
+        setTimeout(() => {
+            response.write('Thank You!\n');
+            response.end('But Our "Response" is in Another Castle!');
+        }, 5000);
     });
 
     // Access http://localhost:7000/async for see response from a async function
@@ -70,8 +100,8 @@ module.exports = (app) => {
 
     // Access http://localhost:7000/error for load and executes error.js module with error
     // app.action('GET', '/error', './error.js');
-    app.action('GET', '/error/<sample>', async (req, res, params) => {
-        throw new Error(params.sample);
+    app.action('GET', '/error/<message>', async (req, res, params) => {
+        throw new Error(params.message);
     });
 
     // Access http://localhost:7000/api/2.0
@@ -96,6 +126,12 @@ module.exports = (app) => {
     app.action('GET', '/custom/<myexample:example>', (request, response, params) => {
         return `<h1>custom pattern</h1>
         <pre>${JSON.stringify(params, null, 4)}</pre>`;
+    });
+
+    // Access http://localhost:7000/status/400 (or another number valid in HTTP status)
+    app.action('GET', '/status/<code:num>', (request, response, params) => {
+        response.writeHead(params.code, { 'Content-Type': 'text/html' });
+        return `You request a ${params.code} response`;
     });
 
     // Supports Buffer

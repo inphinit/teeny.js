@@ -51,6 +51,7 @@ module.exports = (app) => {
     <li><a href="/status/201">/status/&lt;code:num></a></li>
     <li><a href="/buffer">/buffer</a></li>
     <li><a href="/uint8array">/uint8array</a></li>
+    <li><a href="/404">/404</a></li>
 </ul>
 </body>
 </html>`;

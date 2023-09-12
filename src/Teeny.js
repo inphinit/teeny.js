@@ -258,19 +258,19 @@ class Teeny
         for (let path in this.paramRoutes) {
             if (this.paramRoutes.hasOwnProperty(path) === false) continue;
 
-            const routes = this.paramRoutes[path];
-
-            path = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
+            let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
 
             for (const pattern in patterns) {
                 if (patterns.hasOwnProperty(pattern)) {
-                    path = path.replace('<' + pattern + '>)', patterns[pattern] + ')');
+                    pathRE = pathRE.replace('<' + pattern + '>)', patterns[pattern] + ')');
                 }
             }
 
-            const found = pathinfo.match(new RegExp('^' + path + '$'));
+            const found = pathinfo.match(new RegExp('^' + pathRE + '$'));
 
             if (found !== null) {
+                const routes = this.paramRoutes[path];
+
                 callback = routes[method] || routes.ANY;
 
                 if (callback) {
@@ -341,6 +341,7 @@ class Teeny
             }
         } else {
             this.teenyInfo(method, path, code);
+            response.end();
         }
     }
 
@@ -462,8 +463,8 @@ class Teeny
             } else {
                 code = 405;
             }
-        } else if (this.hasParams) {
-            if (this.teenyParams(request, response, method, path)) return;
+        } else if (this.hasParams && this.teenyParams(request, response, method, path)) {
+            return;
         }
 
         if (code === null) {

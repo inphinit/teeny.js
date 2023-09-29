@@ -1,9 +1,15 @@
-"use strict";
-
-const http = require('http');
-const fs = require('fs');
-
 const SimpleMime = require('./SimpleMime.js');
+const core = require('./NodeCore.js');
+
+const { createServer } = core('http');
+
+const {
+    open,
+    close,
+    createReadStream,
+    fstat,
+    lstatSync
+} = core('fs');
 
 const paramPatterns = {
     alnum: '[\\da-zA-Z]+',
@@ -189,7 +195,7 @@ class Teeny
                 this.teenyRefresh(true);
 
                 if (!this.server) {
-                    this.server = http.createServer((request, response) => {
+                    this.server = createServer((request, response) => {
                         this.teenyListen(request, response);
                     });
                 }
@@ -357,84 +363,60 @@ class Teeny
         }
     }
 
-    teenyPublic(method, path, response)
+    teenyPublic(method, path, request, response)
     {
         const file = this.publicPath + path;
 
-        try {
-            const stat = fs.lstatSync(file);
+        open(file, 'r', (err, fd) => {
+            if (err) {
+                this.teenyPublicError(err, method, path, request, response);
+            } else {
+                fstat(fd, (err, stat) => {
+                  if (err) {
+                    this.teenyPublicError(err, method, path, request, response);
+                  } else if (stat.isFile()) {
+                    const charset = this.defaultCharset;
 
-            if (stat.isFile()) {
-                const charset = this.defaultCharset;
+                    let mime = SimpleMime(path);
 
-                let mime = SimpleMime(path);
+                    if (mime === 'text/html' || mime === 'text/plain') {
+                        mime += '; charset=' + charset;
+                    }
 
-                if (charset === 'text/html' || charset === 'text/plain') {
-                    mime += '; charset=' + charset;
-                }
+                    response.writeHead(200, {
+                        'Last-Modified': stat.mtime,
+                        'Content-Length': stat.size,
+                        'Content-Type': mime
+                    });
 
-                this.teenyStreamFile(method, path, response, file, mime, stat);
+                    createReadStream(null, { fd }).pipe(response);
 
-                return null;
+                    this.teenyInfo(method, path, 200);
+                  } else {
+                    this.teenyPublicError({ code: 'ENOENT' }, method, path, request, response);
+                  }
+                });
             }
-        } catch (ee) {
-            const code = ee.code;
-
-            if (code === 'EACCES' || code === 'EPERM') {
-                return 403;
-            } else if (code !== 'ENOENT') {
-                this.teenyInfo(method, path, 500, ee);
-                return 500;
-            }
-        }
-
-        return 404;
+        });
     }
 
-    teenyStreamFile(method, path, response, file, mime, stat)
+    teenyPublicError(ee, method, path, request, response)
     {
-        const stream = fs.createReadStream(file);
+        const code = ee.code;
 
-        let sent = false;
+        let status;
 
-        stream.on('open', () => {
-            if (sent) return;
+        if (code === 'EACCES' || code === 'EPERM') {
+            status = 403;
+        } else if (code === 'ENOENT') {
+            status = 404;
+        } else {
+            status = 500;
+        }
 
-            sent = true;
+        this.teenyDispatch(request, response, method, path, null, status, null);
 
-            response.writeHead(200, {
-                'Last-Modified': stat.mtime,
-                'Content-Length': stat.size,
-                'Content-Type': mime
-            });
-
-            stream.pipe(response);
-
-            this.teenyInfo(method, path, 200);
-        });
-
-        stream.on('error', (ee) => {
-            if (sent) return;
-
-            sent = true;
-
-            const code = ee.code;
-
-            let status;
-
-            if (code === 'EACCES' || code === 'EPERM') {
-                status = 403;
-            } else if (code === 'ENOENT') {
-                status = 404;
-            } else {
-                status = 500;
-            }
-
-            response.writeHead(status, this.defaultType);
-            response.end();
-
-            this.teenyInfo(method, path, status, ee);
-        });
+        if (status !== 404) this.teenyInfo(method, path, status, ee);
     }
 
     teenyListen(request, response)
@@ -469,15 +451,13 @@ class Teeny
 
         if (code === null) {
             if (this.publicPath) {
-                code = this.teenyPublic(method, path, response);
-
-                if (code === null) return;
+                this.teenyPublic(method, path, request, response);
             } else {
                 code = 404;
             }
         }
 
-        this.teenyDispatch(request, response, method, path, callback, code, null);
+        if (code !== null) this.teenyDispatch(request, response, method, path, callback, code, null);
     }
 
     teenyRefresh(raise)
@@ -485,7 +465,7 @@ class Teeny
         try {
             const routesPath = this.require.resolve(this.routesPath);
 
-            const stat = fs.lstatSync(routesPath);
+            const stat = lstatSync(routesPath);
 
             if (stat.mtimeMs > this.updateRoutes) {
                 this.maintenance = true;

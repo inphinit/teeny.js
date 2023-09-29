@@ -11,16 +11,7 @@ const {
     lstatSync
 } = core('fs');
 
-const paramPatterns = {
-    alnum: '[\\da-zA-Z]+',
-    alpha: '[a-zA-Z]+',
-    decimal: '\\d+\\.\\d+',
-    num: '\\d+',
-    noslash: '[^\\/]+',
-    nospace: '\\S+',
-    uuid: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
-    version: '\\d+\\.\\d+(\\.\\d+(-[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*(\\+[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*)?)?)?'
-};
+const paramPatterns = require('./Patterns.js');
 
 /**
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
@@ -334,7 +325,7 @@ class Teeny
                     response.end();
                 }
             } catch (ee) {
-                this.teenyDispatch(request, response, method, path, callback, 500, ee);
+                this.teenyDispatch(request, response, method, path, null, 500, ee);
             }
         } else {
             this.teenyInfo(method, path, code);

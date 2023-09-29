@@ -334,16 +334,7 @@ class Teeny
                     response.end();
                 }
             } catch (ee) {
-                this.teenyInfo(method, path, 500, ee);
-
-                const callback = this.codes[500];
-
-                if (callback) {
-                    this.teenyDispatch(request, response, method, path, callback, 500, null);
-                } else {
-                    response.writeHead(500, this.defaultType);
-                    response.end();
-                }
+                this.teenyDispatch(request, response, method, path, callback, 500, ee);
             }
         } else {
             this.teenyInfo(method, path, code);

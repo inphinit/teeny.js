@@ -1,5 +1,6 @@
-const SimpleMime = require('./SimpleMime.js');
-const core = require('./NodeCore.js');
+const simpleMime = require('./simpleMime.js');
+const core = require('./nodeCore.js');
+const error = require('./error.js');
 
 const { createServer } = core('http');
 
@@ -11,7 +12,9 @@ const {
     lstatSync
 } = core('fs');
 
-const paramPatterns = require('./Patterns.js');
+const paramPatterns = require('./patterns.js');
+
+const states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
 
 /**
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
@@ -36,17 +39,12 @@ class Teeny
         this.server = null;
         this.refreshTimeout = 0;
 
-        this.states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
-        this.state = this.states.UNSENT;
+        this.state = states.UNSENT;
         this.maintenance = false;
 
         this.teenyResetSettings();
 
-        this.defaultCharset = 'UTF-8';
-
-        this.defaultType = {
-            'Content-Type': 'text/html; charset=' + this.defaultCharset
-        };
+        this.setDefaultCharset('UTF-8');
 
         this.updateRoutes = 0;
     }
@@ -130,10 +128,7 @@ class Teeny
     setDefaultCharset(charset)
     {
         this.defaultCharset = charset;
-
-        this.defaultType = {
-            'Content-Type': 'text/html; charset=' + charset
-        };
+        this.defaultType = 'text/html; charset=' + charset;
     }
 
     /**
@@ -168,8 +163,60 @@ class Teeny
         if (typeof require === 'function' && 'resolve' in require) {
             this.require = require;
         } else if (this.debug) {
-            console.error(new Error('Invalid require function, try uses `module.createRequire(filename)`'));
+            console.error('[ERROR]', new Error('Invalid require function, try uses `module.createRequire(filename)`'));
         }
+    }
+
+    /**
+     * Stream a file
+     *
+     * @param {string}                path      Set public path
+     * @param {http.IncomingMessage}  response  Set response
+     * @param {Object}                headers   Set custom headers
+     *
+     */
+    streamFile(path, response, headers)
+    {
+        return new Promise((resolve, reject) => {
+            open(path, 'r', (err, fd) => {
+                if (err) {
+                    reject(error(err));
+                } else {
+                    fstat(fd, (err, stat) => {
+                      if (err) {
+                        reject(error(err));
+                      } else if (stat.isFile()) {
+                        const charset = this.defaultCharset;
+
+                        let contentType = simpleMime(path);
+
+                        if (contentType === 'text/html' || contentType === 'text/plain') {
+                            contentType += '; charset=' + charset;
+                        }
+
+                        response.setHeader('Last-Modified', stat.mtime);
+                        response.setHeader('Content-Length', stat.size);
+                        response.setHeader('Content-Type', contentType);
+
+                        if (headers) {
+                            for (const [header, value] of Object.entries(headers)) {
+                                response.setHeader(header, value);
+                            }
+                        }
+
+                        response.statusCode = 200;
+
+                        createReadStream(null, { fd, autoClose: true }).pipe(response);
+
+                        resolve();
+                      } else {
+                        close(fd, () => {});
+                        reject(error(null, 404));
+                      }
+                    });
+                }
+            });
+        });
     }
 
     /**
@@ -180,8 +227,8 @@ class Teeny
     async exec()
     {
         return new Promise((resolve, reject) => {
-            if (this.state === this.states.STOPPED || this.state === this.states.UNSENT) {
-                this.state = this.states.STARTING;
+            if (this.state === states.STOPPED || this.state === states.UNSENT) {
+                this.state = states.STARTING;
 
                 this.teenyRefresh(true);
 
@@ -192,18 +239,21 @@ class Teeny
                 }
 
                 this.server.listen(this.config, () => {
-                    this.state = this.states.STARTED;
+                    this.state = states.STARTED;
 
                     const details = this.server.address();
 
                     if (this.debug) {
-                        console.info(`[${new Date()}]`, `Teeny server started on ${details.address}:${details.port}`);
+                        console.info('[INFO]', `Teeny server started on ${details.address}:${details.port}`, new Date());
                     }
 
                     resolve(details);
+                }).on('error', (error) => {
+                    this.state = states.STOPPED;
+                    reject(error);
                 });
             } else {
-                reject('server is already started');
+                reject(new Error('server is already started'));
             }
         });
     }
@@ -216,24 +266,24 @@ class Teeny
     async stop()
     {
         return new Promise((resolve, reject) => {
-            if (this.state === this.states.STARTED) {
-                this.state = this.states.STOPPING;
+            if (this.state === states.STARTED) {
+                this.state = states.STOPPING;
 
                 clearTimeout(this.refreshTimeout);
 
                 const details = this.server.address();
 
                 this.server.close(() => {
-                    this.state = this.states.STOPPED;
+                    this.state = states.STOPPED;
 
                     if (this.debug) {
-                        console.info(`[${new Date()}]`, `Stopped server ${details.address}:${details.port}`);
+                        console.info('[INFO]', `Stopped server ${details.address}:${details.port}`, new Date());
                     }
 
                     resolve(details);
                 });
             } else {
-                reject('server is not started');
+                reject(new Error('server is not started'));
             }
         });
     }
@@ -283,23 +333,23 @@ class Teeny
 
         if (code === null) return false;
 
-        this.teenyDispatch(request, response, method, pathinfo, callback, code, params);
+        this.teenyDispatch(request, response, method, pathinfo, params, callback, code);
 
         return true;
     }
 
-    async teenyDispatch(request, response, method, path, callback, code, params)
+    async teenyDispatch(request, response, method, path, params, callback, code, error)
     {
         if (code !== 200 && this.codes[code]) {
             callback = this.codes[code];
         }
 
-        response.writeHead(code, this.defaultType);
+        let result;
+
+        response.setHeader('Content-Type', this.defaultType);
 
         if (callback) {
             try {
-                let result;
-
                 if (typeof callback === 'string') {
                     const cache = this.require.resolve(callback);
 
@@ -311,94 +361,46 @@ class Teeny
                 }
 
                 if (code !== 200) {
-                    result = await callback(request, response, code);
+                    response.statusCode = code;
+                    result = await callback(request, response, code, error);
                 } else if (params !== null) {
                     result = await callback(request, response, params);
                 } else {
                     result = await callback(request, response);
                 }
-
-                this.teenyInfo(method, path, code || 200);
-
-                if (typeof result !== 'undefined') {
-                    response.write(result);
-                    response.end();
-                }
             } catch (ee) {
-                this.teenyDispatch(request, response, method, path, null, 500, ee);
+                return this.teenyDispatch(request, response, method, path, null, null, 500, ee);
             }
-        } else {
-            this.teenyInfo(method, path, code);
-            response.end();
         }
+
+        if (typeof result !== 'undefined') {
+            response.end(result);
+        }
+
+        this.teenyInfo(method, path, code, error);
     }
 
     teenyInfo(method, path, code, error)
     {
         if (this.debug) {
+            const date = new Date();
+
             if (error) {
-                console.error(`[${new Date()}]`, code, method, path);
-                console.error(error);
+                console.error('[ERROR]', code, method, path, date);
+                console.error(error, '\n');
             } else {
-                console.info(`[${new Date()}]`, code, method, path);
+                console.info('[INFO]', code, method, path, date);
             }
         }
     }
 
     teenyPublic(method, path, request, response)
     {
-        const file = this.publicPath + path;
-
-        open(file, 'r', (err, fd) => {
-            if (err) {
-                this.teenyPublicError(err, method, path, request, response);
-            } else {
-                fstat(fd, (err, stat) => {
-                  if (err) {
-                    this.teenyPublicError(err, method, path, request, response);
-                  } else if (stat.isFile()) {
-                    const charset = this.defaultCharset;
-
-                    let mime = SimpleMime(path);
-
-                    if (mime === 'text/html' || mime === 'text/plain') {
-                        mime += '; charset=' + charset;
-                    }
-
-                    response.writeHead(200, {
-                        'Last-Modified': stat.mtime,
-                        'Content-Length': stat.size,
-                        'Content-Type': mime
-                    });
-
-                    createReadStream(null, { fd }).pipe(response);
-
-                    this.teenyInfo(method, path, 200);
-                  } else {
-                    this.teenyPublicError({ code: 'ENOENT' }, method, path, request, response);
-                  }
-                });
-            }
+        this.streamFile(this.publicPath + path, response).then(() => {
+            this.teenyInfo(method, path, 200);
+        }).catch((error) => {
+            this.teenyDispatch(request, response, method, path, null, null, error.code, error);
         });
-    }
-
-    teenyPublicError(ee, method, path, request, response)
-    {
-        const code = ee.code;
-
-        let status;
-
-        if (code === 'EACCES' || code === 'EPERM') {
-            status = 403;
-        } else if (code === 'ENOENT') {
-            status = 404;
-        } else {
-            status = 500;
-        }
-
-        this.teenyDispatch(request, response, method, path, null, status, null);
-
-        if (status !== 404) this.teenyInfo(method, path, status, ee);
     }
 
     teenyListen(request, response)
@@ -439,7 +441,7 @@ class Teeny
             }
         }
 
-        if (code !== null) this.teenyDispatch(request, response, method, path, callback, code, null);
+        if (code !== null) this.teenyDispatch(request, response, method, path, null, callback, code, null);
     }
 
     teenyRefresh(raise)
@@ -455,7 +457,7 @@ class Teeny
                 this.updateRoutes = stat.mtimeMs;
 
                 if (this.debug) {
-                    console.info(`[${new Date()}]`, 'update routes');
+                    console.info('[INFO]', 'update routes', new Date());
                 }
 
                 this.teenyResetSettings();
@@ -470,7 +472,7 @@ class Teeny
             }
         } catch (ee) {
             if (this.debug) {
-                console.error(ee);
+                console.error('[ERROR]', ee);
             }
 
             if (raise) {

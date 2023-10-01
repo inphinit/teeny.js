@@ -215,14 +215,13 @@ const mimes = {
 module.exports = (filepath) => {
     const filename = filepath.slice(filepath.lastIndexOf('/') + 1);
 
+    let mime;
+
     if (filename) {
         const extension = filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
-        const mime = mimes[extension];
 
-        if (mime) {
-            return mime;
-        }
+        mime = mimes[extension];
     }
 
-    return 'application/octet-stream';
+    return mime || 'application/octet-stream';
 };

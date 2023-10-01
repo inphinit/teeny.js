@@ -1,3 +1,3 @@
-module.exports = function (request, response, code) {
+module.exports = (request, response, code) => {
     throw new Error('Error example');
 };

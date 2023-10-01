@@ -1,4 +1,6 @@
 const fs = require('fs');
+const { URL } = require('url');
+const { basename } = require('path');
 
 module.exports = (app) => {
     // Enable (or disable) debug mode
@@ -10,7 +12,7 @@ module.exports = (app) => {
     // Define default charset
     // app.setDefaultCharset('ISO-8859-1');
 
-    app.handlerCodes([403, 404, 405, 500], (request, response, status) => {
+    app.handlerCodes([403, 404, 405, 500], (request, response, status, error) => {
         return `Error page: ${status}`;
     });
 
@@ -51,6 +53,10 @@ module.exports = (app) => {
     <li><a href="/status/201">/status/&lt;code:num></a></li>
     <li><a href="/buffer">/buffer</a></li>
     <li><a href="/uint8array">/uint8array</a></li>
+    <li><a href="/download?file=favicon.ico">Download favicon.ico</a></li>
+    <li><a href="/download?file=sample.txt">Download sample.txt</a></li>
+    <li><a href="/download?file=invalid.txt">Download invalid.txt</a></li>
+    <li><a href="/download">Download missing param</a></li>
     <li><a href="/404">/404</a></li>
 </ul>
 </body>
@@ -131,8 +137,8 @@ module.exports = (app) => {
 
     // Access http://localhost:7000/status/400 (or another number valid in HTTP status)
     app.action('GET', '/status/<code:num>', (request, response, params) => {
-        response.writeHead(params.code, { 'Content-Type': 'text/html' });
-        return `You request a ${params.code} response`;
+        response.statusCode = params.code;
+        return `You status code is ${params.code}`;
     });
 
     // Supports Buffer
@@ -147,5 +153,19 @@ module.exports = (app) => {
           85,  105, 110, 116, 56,
           65,  114, 114, 97, 121
         ]);
+    });
+
+    // Stream file
+    app.action('GET', '/download', (request, response) => {
+        const url = new URL('http://1' + request.url);
+        const file = url.searchParams.get('file');
+
+        app.streamFile('public/' + file, response, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `filename=${basename(file)}`
+        }).catch((error) => {
+            response.statusCode = error.code;
+            response.end(error.message);
+        });
     });
 };

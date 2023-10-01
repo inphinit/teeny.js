@@ -1136,45 +1136,6 @@ npm init
 <div class="highlight"><pre>node index.js
 </pre></div>
 
-<h2 id="debug-mode">Debug mode<a class="headerlink" href="#debug-mode" title="Permanent link"></a></h2>
-<p>Uses <code>app.setDebug(...);</code> method for enable or disable debug mode (<code>false</code> by default), example:</p>
-<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="c1">// Enable debug</span>
-    <span class="nx">app</span><span class="p">.</span><span class="nx">setDebug</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
-
-    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s1">&#39;Hello World!&#39;</span><span class="p">;</span>
-    <span class="p">});</span>
-
-    <span class="p">...</span>
-</pre></div>
-
-<h2 id="delivering-responses">Delivering responses<a class="headerlink" href="#delivering-responses" title="Permanent link"></a></h2>
-<p>In the third parameter (callback) you can send the response to the client in two ways, using <code>return</code> passing a value that can be converted into a string (Promises that return values are also supported):</p>
-<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s1">&#39;Hello!&#39;</span>
-    <span class="p">});</span>
-
-    <span class="p">...</span>
-</pre></div>
-
-<p>Or you can use the second parameter (<code>response</code>) received in the callback, this way you can work with other functions that use callback (eg.: <code>setTimeout</code>), for example:</p>
-<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-        <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">&#39;Hello!&#39;</span><span class="p">),</span> <span class="mi">1000</span><span class="p">);</span>
-    <span class="p">});</span>
-
-    <span class="p">...</span>
-</pre></div>
-
-<p>In the case of <code>return</code>, if you are using arrowfunction and it does not execute anything other than the return, you can pass the value directly, for example:</p>
-<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
-    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="s1">&#39;Hello!&#39;</span><span class="p">);</span>
-
-    <span class="p">...</span>
-</pre></div>
-
 <h2 id="methods-for-config-teenyjs">Methods for config Teeny.js<a class="headerlink" href="#methods-for-config-teenyjs" title="Permanent link"></a></h2>
 <table>
 <thead>
@@ -1231,6 +1192,10 @@ npm init
 <tr>
 <td><code>app.setRequire(Function require)</code></td>
 <td>Set require path for load modules using <code>createRequire()</code> or <code>createRequireFromPath()</code>. <strong>Note:</strong> this function affects the <code>routes.js</code> location and modules loaded by the <code>app.action(methods, module)</code> method</td>
+</tr>
+<tr>
+<td><code>app.streamFile(path, http.ServerResponse response): Promise</code></td>
+<td>Server a file</td>
 </tr>
 <tr>
 <td><code>app.exec(): Promise&lt;Object&gt;</code></td>
@@ -1311,32 +1276,103 @@ npm init
 <span class="p">...</span>
 </pre></div>
 
+<h2 id="debug-mode">Debug mode<a class="headerlink" href="#debug-mode" title="Permanent link"></a></h2>
+<p>Uses <code>app.setDebug(...);</code> method for enable or disable debug mode (<code>false</code> by default), example:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// Enable debug</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">setDebug</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s1">&#39;Hello World!&#39;</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<h2 id="delivering-responses">Delivering responses<a class="headerlink" href="#delivering-responses" title="Permanent link"></a></h2>
+<p>In the third parameter (callback) you can send the response to the client in two ways, using <code>return</code> passing a value that can be converted into a string (Promises that return values are also supported):</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s1">&#39;Hello!&#39;</span>
+    <span class="p">});</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<p>Or you can use the second parameter (<code>response</code>) received in the callback, this way you can work with other functions that use callback (eg.: <code>setTimeout</code>), for example:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">&#39;Hello!&#39;</span><span class="p">),</span> <span class="mi">1000</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<p>In the case of <code>return</code>, if you are using arrowfunction and it does not execute anything other than the return, you can pass the value directly, for example:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="s1">&#39;Hello!&#39;</span><span class="p">);</span>
+
+    <span class="p">...</span>
+</pre></div>
+
+<h2 id="handler-errors">Handler errors<a class="headerlink" href="#handler-errors" title="Permanent link"></a></h2>
+<p>To get errors occurring in the application, detect undefined routes and detect method HTTP method not allowed for a route:</p>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">handlerCodes</span><span class="p">([</span><span class="mi">404</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">status</span><span class="p">,</span> <span class="nx">error</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="c1">// Create a custom page for 404 and 500 status</span>
+        <span class="k">return</span> <span class="err">`</span><span class="nb">Error</span> <span class="nx">page</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">status</span><span class="p">}</span><span class="err">`</span><span class="p">;</span>
+    <span class="p">});</span>
+    <span class="p">...</span>
+</pre></div>
+
+<p>To save errors to a log (an example for send to Slack):</p>
+<div class="highlight"><pre><span class="kr">const</span> <span class="p">{</span> <span class="nx">WebClient</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;@slack/web-api&#39;</span><span class="p">);</span>
+
+<span class="kr">const</span> <span class="nx">token</span> <span class="o">=</span> <span class="p">...;</span>
+<span class="kr">const</span> <span class="nx">conversationId</span> <span class="o">=</span> <span class="p">...;</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">handlerCodes</span><span class="p">([</span><span class="mi">404</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">status</span><span class="p">,</span> <span class="nx">error</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">status</span> <span class="o">===</span> <span class="mi">500</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">web</span><span class="p">.</span><span class="nx">chat</span><span class="p">.</span><span class="nx">postMessage</span><span class="p">({</span>
+                <span class="nx">text</span><span class="o">:</span> <span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">request</span><span class="p">.</span><span class="nx">method</span><span class="p">}</span> <span class="nx">$</span><span class="p">{</span><span class="nx">request</span><span class="p">.</span><span class="nx">url</span><span class="p">}</span><span class="err">\</span><span class="nx">n$</span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">toString</span><span class="p">()}</span><span class="err">`</span><span class="p">,</span>
+                <span class="nx">channel</span><span class="p">,</span>
+            <span class="p">});</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="err">`</span><span class="nb">Error</span> <span class="nx">page</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">status</span><span class="p">}</span><span class="err">`</span><span class="p">;</span>
+    <span class="p">});</span>
+    <span class="p">...</span>
+</pre></div>
+
+<blockquote>
+<p><strong>Note:</strong> See <a href="/C:/DATA/projects/teeny.js/example">example</a></p>
+</blockquote>
 <h2 id="send-big-files-for-http-response">Send big files for HTTP response<a class="headerlink" href="#send-big-files-for-http-response" title="Permanent link"></a></h2>
 <p>When loading in a variable directly all the contents of a file to send with &ldquo;return&rdquo; in the response of a route may crash the application or even the server, instead of reading the entire file you must make use of what already exists in Node , the &ldquo;pipe&rdquo; of streams. An example to send files of different sizes to download in the HTTP response:</p>
 <div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/foo/bar/download&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
     <span class="kr">const</span> <span class="nx">file</span> <span class="o">=</span> <span class="s1">&#39;/home/user/foo/bar/storage/big.file&#39;</span><span class="p">;</span>
-    <span class="kr">const</span> <span class="nx">lstat</span> <span class="o">=</span> <span class="nx">fs</span><span class="p">.</span><span class="nx">lstatSync</span><span class="p">(</span><span class="nx">file</span><span class="p">);</span>
 
-    <span class="c1">// Create a stream for big.file</span>
-    <span class="kr">const</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">fs</span><span class="p">.</span><span class="nx">createReadStream</span><span class="p">(</span><span class="nx">file</span><span class="p">);</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">streamFile</span><span class="p">(</span><span class="nx">file</span><span class="p">,</span> <span class="nx">response</span><span class="p">).</span><span class="nx">then</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Streamed&#39;</span><span class="p">);</span>
+    <span class="p">}).</span><span class="k">catch</span><span class="p">((</span><span class="nx">ee</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">ee</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
 
-    <span class="c1">// Check is exists and if is file</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">lstat</span><span class="p">.</span><span class="nx">isFile</span><span class="p">())</span> <span class="p">{</span>
-        <span class="c1">// Create a stream for big.file</span>
-        <span class="kr">const</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">fs</span><span class="p">.</span><span class="nx">createReadStream</span><span class="p">(</span><span class="nx">file</span><span class="p">);</span>
+<p>Example with custom headers:</p>
+<div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/foo/bar/download&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kr">const</span> <span class="nx">file</span> <span class="o">=</span> <span class="s1">&#39;/home/user/foo/bar/storage/big.file&#39;</span><span class="p">;</span>
 
-        <span class="c1">// Sent file size with Content-Length in header</span>
-        <span class="nx">response</span><span class="p">.</span><span class="nx">writeHead</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;Content-Length&#39;</span><span class="o">:</span> <span class="nx">lstat</span><span class="p">.</span><span class="nx">size</span>
-        <span class="p">});</span>
-
-        <span class="c1">// Uses .pipe() for sent data for response</span>
-        <span class="nx">stream</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="nx">response</span><span class="p">.</span><span class="nx">writeHead</span><span class="p">(</span><span class="mi">404</span><span class="p">);</span>
-        <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">&#39;Invalid file&#39;</span><span class="p">);</span>
-    <span class="p">}</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">streamFile</span><span class="p">(</span><span class="nx">file</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;X-Foo&#39;</span><span class="o">:</span> <span class="s1">&#39;bar&#39;</span>
+    <span class="p">}).</span><span class="nx">then</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Streamed&#39;</span><span class="p">);</span>
+    <span class="p">}).</span><span class="k">catch</span><span class="p">((</span><span class="nx">ee</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">ee</span><span class="p">);</span>
+    <span class="p">});</span>
 <span class="p">});</span>
 </pre></div>
 

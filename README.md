@@ -79,6 +79,59 @@ For start application use command:
 node index.js
 ```
 
+## Methods for config Teeny.js
+
+Method | Description
+--- | ---
+`new Teeny(String routesPath, Number port)` | configure routes (or others methods from class) and port
+`new Teeny(String routesPath, Object config)` | configure routes and server config on second param (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
+`app.action(String\|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
+`app.action(String\|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
+`app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
+`app.handlerCodes(Array codes, String module)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
+`app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
+`app.setDefaultCharset(String charset)` | Define the default charset for use with text/html (route pages, errors) or text/plain (static files)
+`app.setPublic(String path)` | Define path for use static files
+`app.setPattern(String name, String regex)` | Create a pattern for use in route params
+`app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
+`app.setRequire(Function require)` | Set require path for load modules using `createRequire()` or `createRequireFromPath()`. **Note:** this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
+`app.streamFile(path, http.ServerResponse response): Promise` | Server a file
+`app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
+`app.stop(): Promise<Object>` | Stops server, promise returns server info
+
+## Patterns supported by param routes
+
+You can create your own patterns to use with the routes in "Teeny.js", but there are also ready-to-use patterns:
+
+Pattern | Regex used | Description
+--- | --- | ---
+`alnum` | `[\da-zA-Z]+` | Matches routes with param using alpha-numeric in route
+`alpha` | `[a-zA-Z]+` | Matches routes with param using A to Z letters in route
+`decimal` | `\d+\.\d+` | Matches routes with param using decimal format (like `1.2`, `3.5`, `100.50`) in route
+`num` | `\d+` | Matches routes with param using numeric format in route
+`noslash` | `[^\/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
+`nospace` | `\S+` | Matches routes with param using any character except spaces, tabs or NUL in route
+`uuid` | `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}` | Matches routes with param using uuid format in route
+`version` | `\d+\.\d+(\.\d+(-[\da-zA-Z]+(\.[\da-zA-Z]+)*(\+[\da-zA-Z]+(\.[\da-zA-Z]+)*)?)?)?` | Matches routes with param using [`semver.org`](https://semver.org/) format in route
+
+For use a pattern in routes, set like this:
+
+``` javascript
+module.exports = (app) => {
+    app.action('GET', '/user/<name:alnum>', (request, response, params) => {
+        return `Hello ${params.alnum}`;
+    });
+
+    app.action('GET', '/api/<foobar:version>', (request, response, params) => {
+        return `Version: ${params.foobar}`;
+    });
+
+    app.action('GET', '/product/<id:num>', (request, response, params) => {
+        return `Product ID: ${params.id}`;
+    });
+...
+```
+
 ## Debug mode
 
 Uses `app.setDebug(...);` method for enable or disable debug mode (`false` by default), example:
@@ -128,59 +181,42 @@ module.exports = (app) => {
     ...
 ```
 
-> **Note:** See [example](./example)
+## Handler errors
 
-## Methods for config Teeny.js
-
-Method | Description
---- | ---
-`new Teeny(String routesPath, Number port)` | configure routes (or others methods from class) and port
-`new Teeny(String routesPath, Object config)` | configure routes and server config on second param (see: https://nodejs.org/api/net.html#net_server_listen_options_callback)
-`app.action(String\|Array methods, String path, Function callback)` | Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function
-`app.action(String\|Array methods, String path, String module)` | Define a route for load and execute other "local" module (it is recommended to set the absolute path)
-`app.handlerCodes(Array codes, Function callback)` | Catch http errors (like `ErrorDocument` or `error_page`) from ISPAI or if try access a route not defined (emits `404 Not Found`) or if try access a defined route with not defined http method (emits `405 Method Not Allowed`)
-`app.handlerCodes(Array codes, String module)` | Catch http errors or errors from routes, if catchs a error execute a "local" module defined in second argument
-`app.setDebug(Boolean enable)` | Define if debug is on (`true`) or off (`false`), by default is `false`
-`app.setDefaultCharset(String charset)` | Define the default charset for use with text/html (route pages, errors) or text/plain (static files)
-`app.setPublic(String path)` | Define path for use static files
-`app.setPattern(String name, String regex)` | Create a pattern for use in route params
-`app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
-`app.setRequire(Function require)` | Set require path for load modules using `createRequire()` or `createRequireFromPath()`. **Note:** this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
-`app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
-`app.stop(): Promise<Object>` | Stops server, promise returns server info
-
-## Patterns supported by param routes
-
-You can create your own patterns to use with the routes in "Teeny.js", but there are also ready-to-use patterns:
-
-Pattern | Regex used | Description
---- | --- | ---
-`alnum` | `[\da-zA-Z]+` | Matches routes with param using alpha-numeric in route
-`alpha` | `[a-zA-Z]+` | Matches routes with param using A to Z letters in route
-`decimal` | `\d+\.\d+` | Matches routes with param using decimal format (like `1.2`, `3.5`, `100.50`) in route
-`num` | `\d+` | Matches routes with param using numeric format in route
-`noslash` | `[^\/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
-`nospace` | `\S+` | Matches routes with param using any character except spaces, tabs or NUL in route
-`uuid` | `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}` | Matches routes with param using uuid format in route
-`version` | `\d+\.\d+(\.\d+(-[\da-zA-Z]+(\.[\da-zA-Z]+)*(\+[\da-zA-Z]+(\.[\da-zA-Z]+)*)?)?)?` | Matches routes with param using [`semver.org`](https://semver.org/) format in route
-
-For use a pattern in routes, set like this:
+To get errors occurring in the application, detect undefined routes and detect method HTTP method not allowed for a route:
 
 ``` javascript
 module.exports = (app) => {
-    app.action('GET', '/user/<name:alnum>', (request, response, params) => {
-        return `Hello ${params.alnum}`;
+    app.handlerCodes([404, 500], (request, response, status, error) => {
+        // Create a custom page for 404 and 500 status
+        return `Error page: ${status}`;
     });
-
-    app.action('GET', '/api/<foobar:version>', (request, response, params) => {
-        return `Version: ${params.foobar}`;
-    });
-
-    app.action('GET', '/product/<id:num>', (request, response, params) => {
-        return `Product ID: ${params.id}`;
-    });
-...
+    ...
 ```
+
+To save errors to a log (an example for send to Slack):
+
+``` javascript
+const { WebClient } = require('@slack/web-api');
+
+const token = ...;
+const conversationId = ...;
+
+module.exports = (app) => {
+    app.handlerCodes([404, 500], (request, response, status, error) => {
+        if (status === 500) {
+            web.chat.postMessage({
+                text: `${request.method} ${request.url}\n${error.toString()}`,
+                channel,
+            });
+        }
+
+        return `Error page: ${status}`;
+    });
+    ...
+```
+
+> **Note:** See [example](./example)
 
 ## Send big files for HTTP response
 
@@ -189,28 +225,29 @@ When loading in a variable directly all the contents of a file to send with "ret
 ``` javascript
 app.action('GET', '/foo/bar/download', (request, response) => {
     const file = '/home/user/foo/bar/storage/big.file';
-    const lstat = fs.lstatSync(file);
 
-    // Create a stream for big.file
-    const stream = fs.createReadStream(file);
+    app.streamFile(file, response).then(() => {
+        console.log('Streamed');
+    }).catch((ee) => {
+        console.error(ee);
+    });
+});
+```
 
-    // Check is exists and if is file
-    if (lstat.isFile()) {
-        // Create a stream for big.file
-        const stream = fs.createReadStream(file);
+Example with custom headers:
 
-        // Sent file size with Content-Length in header
-        response.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Length': lstat.size
-        });
+``` javascript
+app.action('GET', '/foo/bar/download', (request, response) => {
+    const file = '/home/user/foo/bar/storage/big.file';
 
-        // Uses .pipe() for sent data for response
-        stream.pipe(response);
-    } else {
-        response.writeHead(404);
-        response.end('Invalid file');
-    }
+    app.streamFile(file, response, {
+        'Content-Type': 'application/octet-stream',
+        'X-Foo': 'bar'
+    }).then(() => {
+        console.log('Streamed');
+    }).catch((ee) => {
+        console.error(ee);
+    });
 });
 ```
 

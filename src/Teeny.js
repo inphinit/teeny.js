@@ -243,6 +243,8 @@ class Teeny
 
                     const details = this.server.address();
 
+                    this.teenyRefresh(true);
+
                     if (this.debug) {
                         console.info('[INFO]', `Teeny server started on ${details.address}:${details.port}`, new Date());
                     }
@@ -456,10 +458,6 @@ class Teeny
 
                 this.updateRoutes = stat.mtimeMs;
 
-                if (this.debug) {
-                    console.info('[INFO]', 'update routes', new Date());
-                }
-
                 this.teenyResetSettings();
 
                 if (require.cache[routesPath]) {
@@ -469,6 +467,14 @@ class Teeny
                 this.require(routesPath)(this);
 
                 this.maintenance = false;
+
+                if (this.debug) {
+                    console.log();
+                    console.table(this.routes);
+                    console.table(this.paramRoutes);
+
+                    if (!raise) console.info('[INFO]', 'update routes', new Date());
+                }
             }
         } catch (ee) {
             if (this.debug) {

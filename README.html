@@ -1100,18 +1100,18 @@ body .markdown-body
 <h2 id="configure-your-project">Configure your project<a class="headerlink" href="#configure-your-project" title="Permanent link"></a></h2>
 <p>Before start, Node10+ is required.</p>
 <p>If not created a project you can create using <code>npm init</code>, first create a folder named <code>blog</code>:</p>
-<div class="highlight"><pre>mkdir blog
-cd blog
-npm init
+<div class="highlight"><pre>mkdir blog &amp;&amp; cd blog &amp;&amp; npm init &amp;&amp; npm i teeny.js
 </pre></div>
 
-<p>Or can copy <a href="/C:/DATA/projects/teeny.js/example"><code>./example</code></a> folder</p>
-<p>For install use:</p>
-<div class="highlight"><pre>npm i teeny.js
+<p>Or to install into an existing project, run:</p>
+<div class="highlight"><pre>cd project-folder
+npm i teeny.js
 </pre></div>
 
-<p>In example create you can use <code>index.js</code> or other and put routes in a script named <code>routes.js</code> (or other name), example:</p>
-<div class="highlight"><pre><span class="kr">const</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;teeny.js&#39;</span><span class="p">);</span>
+<p>After install you can use <code>index.js</code> or other and put routes in a script named <code>routes.js</code> (or other name), example:</p>
+<div class="highlight"><pre><span class="c1">// index.js</span>
+
+<span class="kr">const</span> <span class="p">{</span> <span class="nx">Teeny</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;teeny.js&#39;</span><span class="p">);</span>
 
 <span class="kr">const</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Teeny</span><span class="p">(</span><span class="err">`</span><span class="nx">$</span><span class="p">{</span><span class="nx">__dirname</span><span class="p">}</span><span class="o">/</span><span class="nx">routes</span><span class="p">.</span><span class="nx">js</span><span class="err">`</span><span class="p">,</span> <span class="mi">7000</span><span class="p">);</span>
 
@@ -1120,7 +1120,9 @@ npm init
 
 <p>The <code>${__dirname}/routes.js</code> is your module with routes and configs and <code>7000</code> is the HTTP port.</p>
 <p>The <code>request</code> contains <a href="https://nodejs.org/api/http.html#http_class_http_clientrequest"><code>http.ClientRequest</code></a> object and <code>response</code> contains <a href="https://nodejs.org/api/http.html#http_class_http_serverresponse"><code>http.ServerResponse</code></a></p>
-<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+<div class="highlight"><pre><span class="c1">// routes.js</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">app</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
     <span class="nx">app</span><span class="p">.</span><span class="nx">action</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
         <span class="k">return</span> <span class="s1">&#39;Hello World!&#39;</span><span class="p">;</span>
     <span class="p">});</span>
@@ -1154,11 +1156,11 @@ npm init
 <td>configure routes and server config on second param (see: <a href="https://nodejs.org/api/net.html#net_server_listen_options_callback">https://nodejs.org/api/net.html#net_server_listen_options_callback</a>)</td>
 </tr>
 <tr>
-<td><code>app.action(String\|Array methods, String path, Function callback)</code></td>
+<td><code>app.action(String|Array methods, String path, Function callback)</code></td>
 <td>Define a route (from HTTP path in URL) for execute a function, arrow function or anonymous function</td>
 </tr>
 <tr>
-<td><code>app.action(String\|Array methods, String path, String module)</code></td>
+<td><code>app.action(String|Array methods, String path, String module)</code></td>
 <td>Define a route for load and execute other &ldquo;local&rdquo; module (it is recommended to set the absolute path)</td>
 </tr>
 <tr>

@@ -32,22 +32,21 @@ Before start, Node10+ is required.
 If not created a project you can create using `npm init`, first create a folder named `blog`:
 
 ```
-mkdir blog
-cd blog
-npm init
+mkdir blog && cd blog && npm init && npm i teeny.js
 ```
 
-Or can copy [`./example`](./example) folder
-
-For install use:
+Or to install into an existing project, run:
 
 ```
+cd project-folder
 npm i teeny.js
 ```
 
-In example create you can use `index.js` or other and put routes in a script named `routes.js` (or other name), example:
+After install you can use `index.js` or other and put routes in a script named `routes.js` (or other name), example:
 
 ``` javascript
+// index.js
+
 const { Teeny } = require('teeny.js');
 
 const app = new Teeny(`${__dirname}/routes.js`, 7000);
@@ -60,6 +59,8 @@ The `${__dirname}/routes.js` is your module with routes and configs and `7000` i
 The `request` contains [`http.ClientRequest`](https://nodejs.org/api/http.html#http_class_http_clientrequest) object and `response` contains [`http.ServerResponse`](https://nodejs.org/api/http.html#http_class_http_serverresponse)
 
 ``` javascript
+// routes.js
+
 module.exports = (app) => {
     app.action('GET', '/', (request, response) => {
         return 'Hello World!';

@@ -74,7 +74,7 @@ class Teeny
             routes = this.routes;
         }
 
-        if (!this.routes[path]) {
+        if (!routes[path]) {
             routes[path] = [];
         }
 
@@ -211,7 +211,7 @@ class Teeny
                         resolve();
                       } else {
                         close(fd, () => {});
-                        reject(error(null, 404));
+                        reject(error('No such file', 404));
                       }
                     });
                 }
@@ -299,13 +299,14 @@ class Teeny
     {
         const patterns = this.paramPatterns;
         const getParams = this.paramPatternsRE;
+        const paths = this.paramRoutes;
 
         let callback;
         let params = null;
         let code = null;
 
-        for (let path in this.paramRoutes) {
-            if (this.paramRoutes.hasOwnProperty(path) === false) continue;
+        for (let path in paths) {
+            if (paths.hasOwnProperty(path) === false) continue;
 
             let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
 
@@ -318,7 +319,7 @@ class Teeny
             const found = pathinfo.match(new RegExp('^' + pathRE + '$'));
 
             if (found !== null) {
-                const routes = this.paramRoutes[path];
+                const routes = paths[path];
 
                 callback = routes[method] || routes.ANY;
 
@@ -353,12 +354,6 @@ class Teeny
         if (callback) {
             try {
                 if (typeof callback === 'string') {
-                    const cache = this.require.resolve(callback);
-
-                    if (require.cache[cache]) {
-                        delete require.cache[cache];
-                    }
-
                     callback = this.require(callback);
                 }
 
@@ -373,6 +368,9 @@ class Teeny
             } catch (ee) {
                 return this.teenyDispatch(request, response, method, path, null, null, 500, ee);
             }
+        } else {
+            response.statusCode = code;
+            result = '';
         }
 
         if (typeof result !== 'undefined') {
@@ -419,10 +417,10 @@ class Teeny
         let code = null;
         let callback;
 
-        if (this.routes[path]) {
-            code = 200;
+        const routes = this.routes[path];
 
-            const routes = this.routes[path];
+        if (routes) {
+            code = 200;
 
             if (routes[method]) {
                 callback = routes[method];
@@ -446,6 +444,30 @@ class Teeny
         if (code !== null) this.teenyDispatch(request, response, method, path, null, callback, code, null);
     }
 
+    teenyClearCache(key)
+    {
+        if (require.cache[key]) {
+            delete require.cache[key];
+        }
+    }
+
+    teenyClearCacheRoutes()
+    {
+        Object.keys(this.routes).concat(Object.keys(this.paramRoutes)).forEach((route) => {
+            const methods = this.routes[route] || this.paramRoutes[route];
+
+            Object.keys(methods).forEach((method) => {
+                const callback = methods[method];
+
+                if (typeof callback === 'string') {
+                    try {
+                        this.teenyClearCache(this.require.resolve(callback));
+                    } catch (ee) {}
+                }
+            });
+        });
+    }
+
     teenyRefresh(raise)
     {
         try {
@@ -458,20 +480,18 @@ class Teeny
 
                 this.updateRoutes = stat.mtimeMs;
 
+                this.teenyClearCacheRoutes();
+
                 this.teenyResetSettings();
 
-                if (require.cache[routesPath]) {
-                    delete require.cache[routesPath];
-                }
+                this.teenyClearCache(routesPath);
 
                 this.require(routesPath)(this);
 
                 this.maintenance = false;
 
                 if (this.debug) {
-                    console.log();
-                    console.table(this.routes);
-                    console.table(this.paramRoutes);
+                    this.teenyDisplayRoutes();
 
                     if (!raise) console.info('[INFO]', 'update routes', new Date());
                 }
@@ -487,6 +507,39 @@ class Teeny
         }
 
         this.refreshTimeout = setTimeout(() => this.teenyRefresh(false), 1000);
+    }
+
+    teenyDisplayRoutes()
+    {
+        let withParams = {};
+
+        const paramRoutes = this.paramRoutes;
+
+        Object.keys(paramRoutes).forEach((route) => {
+            const original = route.replace(/\\([\^$|[\]():<>!?/\\])/g, '$1');
+            withParams[original] = paramRoutes[route];
+        });
+
+        withParams = Object.assign({}, this.routes, withParams);
+
+        const routes = Object.keys(withParams);
+
+        if (routes.length) {
+            routes.sort((a, b) => b.length - a.length);
+
+            const pad = routes[0].length;
+
+            Object.keys(withParams).forEach((route) => {
+                const methods = withParams[route];
+
+                delete withParams[route];
+
+                withParams[route.padEnd(pad, ' ')] = methods;
+            });
+
+            console.log();
+            console.table(withParams);
+        }
     }
 
     teenyResetSettings()

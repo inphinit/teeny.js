@@ -96,9 +96,9 @@ Method | Description
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
 `app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
 `app.setRequire(Function require)` | Set require path for load modules using `createRequire()` or `createRequireFromPath()`. **Note:** this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
-`app.streamFile(path, http.ServerResponse response, Object customHeaders): Promise<(stream.Writable|Error)>` | Serve a file. This method automatically sends the `Last-Modified`, `Content-Length`, and `Content-Type` headers. **Note:** You can customize the headers by sending an object in the third parameter.
-`app.exec(): Promise<Object|Error>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
-`app.stop(): Promise<Object|Error>` | Stops server, promise returns server info
+`app.streamFile(path, http.ServerResponse response, Object customHeaders): Promise<(stream.Writable\|Error)>` | Serve a file. This method automatically sends the `Last-Modified`, `Content-Length`, and `Content-Type` headers. **Note:** You can customize the headers by sending an object in the third parameter.
+`app.exec(): Promise<Object\|Error>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
+`app.stop(): Promise<Object\|Error>` | Stops server, promise returns server info
 
 ## Patterns supported by param routes
 

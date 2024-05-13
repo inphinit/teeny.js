@@ -1,3 +1,4 @@
+const paramPatterns = require('./patterns.js');
 const simpleMime = require('./simpleMime.js');
 const core = require('./nodeCore.js');
 const error = require('./error.js');
@@ -11,8 +12,6 @@ const {
     fstat,
     lstatSync
 } = core('fs');
-
-const paramPatterns = require('./patterns.js');
 
 const states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
 
@@ -54,7 +53,7 @@ class Teeny
      *
      * @param {(string|string[])}  method    Set the http method(s)
      * @param {string}             path      Set the path
-     * @param {function|null}      callback  Set the function or module
+     * @param {(function|null)}    callback  Set the function or module
      */
     action(methods, path, callback)
     {
@@ -90,8 +89,8 @@ class Teeny
     /**
      * Handler HTTP status code from ISAPI (from apache2handler or fast-cgi)
      *
-     * @param {number[]}       codes     Set code errors
-     * @param {function|null}  callback  Set function or module
+     * @param {number[]}         codes     Set code errors
+     * @param {(function|null)}  callback  Set function or module
      */
     handlerCodes(codes, callback)
     {
@@ -134,7 +133,7 @@ class Teeny
     /**
      * Create or remove a pattern for URL slugs
      *
-     * @param {(string)}              pattern  Set a pattern for URL slug params like this /foo/<var:pattern>
+     * @param {string}                pattern  Set a pattern for URL slug params like this /foo/<var:pattern>
      * @param {(RegExp|string|null)}  regex    Set a regex to a specific pattern
      */
     setPattern(pattern, regex)
@@ -170,10 +169,10 @@ class Teeny
     /**
      * Stream a file
      *
-     * @param {string}                path      Set public path
-     * @param {http.IncomingMessage}  response  Set response
-     * @param {Object}                headers   Set custom headers
-     *
+     * @param   {string}                          path      Set public path
+     * @param   {http.IncomingMessage}            response  Set response
+     * @param   {Object}                          headers   Set custom headers
+     * @returns {Promise<(stream.Writable|Error)>}  Response from promise returns details about server
      */
     streamFile(path, response, headers)
     {
@@ -182,20 +181,18 @@ class Teeny
                 if (err) {
                     reject(error(err));
                 } else {
-                    fstat(fd, (err, stat) => {
+                    fstat(fd, (err, stats) => {
                       if (err) {
                         reject(error(err));
-                      } else if (stat.isFile()) {
-                        const charset = this.defaultCharset;
-
+                      } else if (stats.isFile()) {
                         let contentType = simpleMime(path);
 
                         if (contentType === 'text/html' || contentType === 'text/plain') {
-                            contentType += '; charset=' + charset;
+                            contentType += '; charset=' + this.defaultCharset;
                         }
 
-                        response.setHeader('Last-Modified', stat.mtime);
-                        response.setHeader('Content-Length', stat.size);
+                        response.setHeader('Last-Modified', stats.mtime);
+                        response.setHeader('Content-Length', stats.size);
                         response.setHeader('Content-Type', contentType);
 
                         if (headers) {
@@ -206,9 +203,7 @@ class Teeny
 
                         response.statusCode = 200;
 
-                        createReadStream(null, { fd, autoClose: true }).pipe(response);
-
-                        resolve();
+                        resolve(createReadStream(null, { fd, autoClose: true }).pipe(response));
                       } else {
                         close(fd, () => {});
                         reject(error('No such file', 404));
@@ -255,7 +250,7 @@ class Teeny
                     reject(error);
                 });
             } else {
-                reject(new Error('server is already started'));
+                reject(new Error('Server is already started'));
             }
         });
     }
@@ -285,7 +280,7 @@ class Teeny
                     resolve(details);
                 });
             } else {
-                reject(new Error('server is not started'));
+                reject(new Error('Server is not started'));
             }
         });
     }
@@ -308,7 +303,7 @@ class Teeny
         for (let path in paths) {
             if (paths.hasOwnProperty(path) === false) continue;
 
-            let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '.*?)');
+            let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '[^/]+)');
 
             for (const pattern in patterns) {
                 if (patterns.hasOwnProperty(pattern)) {
@@ -441,7 +436,9 @@ class Teeny
             }
         }
 
-        if (code !== null) this.teenyDispatch(request, response, method, path, null, callback, code, null);
+        if (code !== null) {
+            this.teenyDispatch(request, response, method, path, null, callback, code, null);
+        }
     }
 
     teenyClearCache(key)
@@ -462,7 +459,11 @@ class Teeny
                 if (typeof callback === 'string') {
                     try {
                         this.teenyClearCache(this.require.resolve(callback));
-                    } catch (ee) {}
+                    } catch (ee) {
+                        if (this.debug) {
+                            console.error('[ERROR]', ee);
+                        }
+                    }
                 }
             });
         });
@@ -493,7 +494,7 @@ class Teeny
                 if (this.debug) {
                     this.teenyDisplayRoutes();
 
-                    if (!raise) console.info('[INFO]', 'update routes', new Date());
+                    if (!raise) console.info('[INFO]', 'Update routes', new Date());
                 }
             }
         } catch (ee) {

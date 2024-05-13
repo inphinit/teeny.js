@@ -44,7 +44,7 @@ npm i teeny.js
 
 After install you can use `index.js` or other and put routes in a script named `routes.js` (or other name), example:
 
-``` javascript
+```javascript
 // index.js
 
 const { Teeny } = require('teeny.js');
@@ -58,7 +58,7 @@ The `${__dirname}/routes.js` is your module with routes and configs and `7000` i
 
 The `request` contains [`http.ClientRequest`](https://nodejs.org/api/http.html#http_class_http_clientrequest) object and `response` contains [`http.ServerResponse`](https://nodejs.org/api/http.html#http_class_http_serverresponse)
 
-``` javascript
+```javascript
 // routes.js
 
 module.exports = (app) => {
@@ -96,9 +96,9 @@ Method | Description
 `app.setPattern(String name, String regex)` | Create a pattern for use in route params
 `app.setPattern(String name, RegExp regex)` | Create a pattern using a RegExp object
 `app.setRequire(Function require)` | Set require path for load modules using `createRequire()` or `createRequireFromPath()`. **Note:** this function affects the `routes.js` location and modules loaded by the `app.action(methods, module)` method
-`app.streamFile(path, http.ServerResponse response): Promise` | Server a file
-`app.exec(): Promise<Object>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
-`app.stop(): Promise<Object>` | Stops server, promise returns server info
+`app.streamFile(path, http.ServerResponse response, Object customHeaders): Promise<(stream.Writable|Error)>` | Serve a file. This method automatically sends the `Last-Modified`, `Content-Length`, and `Content-Type` headers. **Note:** You can customize the headers by sending an object in the third parameter.
+`app.exec(): Promise<Object|Error>` | Starts server, promise returns server info like `{address: "127.0.0.1", port: 7000}` (see https://nodejs.org/api/net.html#net_server_address)
+`app.stop(): Promise<Object|Error>` | Stops server, promise returns server info
 
 ## Patterns supported by param routes
 
@@ -110,14 +110,14 @@ Pattern | Regex used | Description
 `alpha` | `[a-zA-Z]+` | Matches routes with param using A to Z letters in route
 `decimal` | `\d+\.\d+` | Matches routes with param using decimal format (like `1.2`, `3.5`, `100.50`) in route
 `num` | `\d+` | Matches routes with param using numeric format in route
-`noslash` | `[^\/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
-`nospace` | `\S+` | Matches routes with param using any character except spaces, tabs or NUL in route
+`noslash` | `[^/]+` | Matches routes with param using any character except slashs (`\/` or `/`) in route
+`nospace` | `[^/\s]+` | Matches routes with param using any character except spaces, tabs or NUL or slashs in route
 `uuid` | `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}` | Matches routes with param using uuid format in route
 `version` | `\d+\.\d+(\.\d+(-[\da-zA-Z]+(\.[\da-zA-Z]+)*(\+[\da-zA-Z]+(\.[\da-zA-Z]+)*)?)?)?` | Matches routes with param using [`semver.org`](https://semver.org/) format in route
 
 For use a pattern in routes, set like this:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     app.action('GET', '/user/<name:alnum>', (request, response, params) => {
         return `Hello ${params.alnum}`;
@@ -137,7 +137,7 @@ module.exports = (app) => {
 
 Uses `app.setDebug(...);` method for enable or disable debug mode (`false` by default), example:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     // Enable debug
     app.setDebug(true);
@@ -153,7 +153,7 @@ module.exports = (app) => {
 
 In the third parameter (callback) you can send the response to the client in two ways, using `return` passing a value that can be converted into a string (Promises that return values are also supported):
 
-``` javascript
+```javascript
 module.exports = (app) => {
     app.action('GET', '/', (request, response) => {
         return 'Hello!'
@@ -164,7 +164,7 @@ module.exports = (app) => {
 
 Or you can use the second parameter (`response`) received in the callback, this way you can work with other functions that use callback (eg.: `setTimeout`), for example:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     app.action('GET', '/', (request, response) => {
         setTimeout(() => response.end('Hello!'), 1000);
@@ -175,7 +175,7 @@ module.exports = (app) => {
 
 In the case of `return`, if you are using arrowfunction and it does not execute anything other than the return, you can pass the value directly, for example:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     app.action('GET', '/', (request, response) => 'Hello!');
 
@@ -186,7 +186,7 @@ module.exports = (app) => {
 
 To get errors occurring in the application, detect undefined routes and detect method HTTP method not allowed for a route:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     app.handlerCodes([404, 500], (request, response, status, error) => {
         // Create a custom page for 404 and 500 status
@@ -197,18 +197,23 @@ module.exports = (app) => {
 
 To save errors to a log (an example for send to Slack):
 
-``` javascript
+```javascript
 const { WebClient } = require('@slack/web-api');
 
 const token = ...;
 const conversationId = ...;
+
+// Initialize
+const web = new WebClient(token);
+
+...
 
 module.exports = (app) => {
     app.handlerCodes([404, 500], (request, response, status, error) => {
         if (status === 500) {
             web.chat.postMessage({
                 text: `${request.method} ${request.url}\n${error.toString()}`,
-                channel,
+                channel: conversationId,
             });
         }
 
@@ -221,11 +226,37 @@ module.exports = (app) => {
 
 ## Send big files for HTTP response
 
-When loading in a variable directly all the contents of a file to send with "return" in the response of a route may crash the application or even the server, instead of reading the entire file you must make use of what already exists in Node , the "pipe" of streams. An example to send files of different sizes to download in the HTTP response:
+If you are on a server like Apache or NGINX you may prefer to use modules to deliver a protected file. Examples of popular modules:
 
-``` javascript
+Module | Server | Documentation
+--- | --- | ---
+`X-Sendfile` | Apache | https://tn123.org/mod_xsendfile/
+`X-Accel-Redirect` | NGINX | https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/
+`X-LIGHTTPD-send-file` and `X-Sendfile2` | Lighttpd | https://redmine.lighttpd.net/projects/1/wiki/X-LIGHTTPD-send-file
+
+An NGINX example:
+
+```javascript
 app.action('GET', '/foo/bar/download', (request, response) => {
-    const file = '/home/user/foo/bar/storage/big.file';
+    // Relative to location {}
+    const file = '/protected/big.file';
+
+    if (isAuthenticated(request)) {
+        response.setHeader('X-LIGHTTPD-send-file', file);
+        response.end();
+    } else {
+        response.writeHead(403, app.defaultType);
+        response.end('Not authorized');
+    }
+});
+```
+
+If running stand-alone, you can serve the file using the `Teeny.streamFile()` method. This method works with a pipe, and will already generate the necessary headers, based on the file type. Simple example:
+
+```javascript
+app.action('GET', '/foo/bar/download', (request, response) => {
+    // Absolute path
+    const file = '/home/user/foo/bar/protected/big.file';
 
     app.streamFile(file, response).then(() => {
         console.log('Streamed');
@@ -237,7 +268,7 @@ app.action('GET', '/foo/bar/download', (request, response) => {
 
 Example with custom headers:
 
-``` javascript
+```javascript
 app.action('GET', '/foo/bar/download', (request, response) => {
     const file = '/home/user/foo/bar/storage/big.file';
 
@@ -256,7 +287,7 @@ app.action('GET', '/foo/bar/download', (request, response) => {
 
 Callback supports `string`, `Buffer` and `Uint8Array`
 
-``` javascript
+```javascript
 app.action('GET', '/string', () => {
     return 'My string';
 });
@@ -280,7 +311,7 @@ You can set up a require function in the context of routes to load modules via r
 
 If you want to configure from the script called do:
 
-``` javascript
+```javascript
 const app = new Teeny('./routes.js', 7000);
 
 app.setRequire(require);
@@ -288,7 +319,7 @@ app.setRequire(require);
 
 You can also configure it in the routes file, that way if you need to edit the file and change the require it will not be necessary to restart the application:
 
-``` javascript
+```javascript
 module.exports = (app) => {
     // (Optional) Define require function for load modules in router context for load
     app.setRequire(require);
@@ -304,7 +335,7 @@ If you want to customize the path you can use `module.createRequire` (v12.2.0+).
 
 Defines a custom path from which to locate your modules using `module.createRequire`:
 
-``` javascript
+```javascript
 const { createRequire } = require('module');
 
 module.exports = (app) => {
@@ -319,7 +350,7 @@ module.exports = (app) => {
 
 Defines a custom path from which to locate your modules using `module.createRequireFromPath` (deprecated):
 
-``` javascript
+```javascript
 const { createRequireFromPath } = require('module');
 
 module.exports = (app) => {

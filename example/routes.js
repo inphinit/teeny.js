@@ -58,6 +58,7 @@ module.exports = (app) => {
     <li><a href="/download?file=invalid.txt">Download invalid.txt</a></li>
     <li><a href="/download">Download missing param</a></li>
     <li><a href="/404">/404</a></li>
+    <li><a href="/error">/error</a></li>
 </ul>
 </body>
 </html>`;
@@ -157,15 +158,60 @@ module.exports = (app) => {
 
     // Stream file
     app.action('GET', '/download', (request, response) => {
+        const auth = request.headers.authorization;
+
+        if (!auth) {
+            response.statusCode = 401;
+            response.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"');
+            response.end('Canceled');
+            return;
+        }
+
+        const [user, pass] = new Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
+
+        if (user === 'logout') {
+            response.statusCode = 401;
+            response.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"');
+            response.end('Canceled: ' . user);
+            return;
+        }
+
+        if (user !== 'foo' || pass !== 'bar') {
+            response.statusCode = 403;
+            response.end(`
+            <script>
+            function logout() {
+                var url = new URL(location.href);
+                url.username = 'logout';
+                location.href = url;
+            }
+            </script>
+            <p>
+                Wrong credentials - <button onclick="logout()">retry</button>
+            </p>
+            `);
+            return;
+        }
+
         const url = new URL('http://1' + request.url);
         const file = url.searchParams.get('file');
 
-        app.streamFile('public/' + file, response, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `filename=${basename(file)}`
-        }).catch((error) => {
-            response.statusCode = error.code;
-            response.end(error.message);
-        });
+        if (file) {
+            app.streamFile('protected/' + file, response, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': `filename=${basename(file)}`
+            }).catch((error) => {
+                response.statusCode = error.code;
+                response.end(error.message);
+            });
+        } else {
+            response.writeHead(400, { 'Content-Type': 'text/plain' });
+            response.end('Missing param');
+        }
+    });
+
+    // Catch error
+    app.action('GET', '/error', (request, response) => {
+        response.end(undefinedVariable);
     });
 };

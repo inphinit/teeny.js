@@ -15,6 +15,8 @@ const {
 
 const states = { UNSENT: 0, STARTING: 1, STARTED: 2, STOPPING: 4, STOPPED: 8 };
 
+const defaultParam = /\<\>\)/g;
+
 /**
  * Inspired by Inphinit\Routing\Route and Inphinit\Teeny
  *
@@ -303,7 +305,7 @@ class Teeny
         for (let path in paths) {
             if (paths.hasOwnProperty(path) === false) continue;
 
-            let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(/\<\>\)/g, '[^/]+)');
+            let pathRE = path.replace(getParams, '(?<$1><$3>)').replace(defaultParam, '[^/]+)');
 
             for (const pattern in patterns) {
                 if (patterns.hasOwnProperty(pattern)) {

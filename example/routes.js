@@ -21,47 +21,10 @@ module.exports = (app) => {
 
     // Access http://localhost:7000/ for see all paths
     app.action('GET', '/', (request, response) => {
-        return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Teeny.js</title>
-</head>
-<body>
-<ul>
-    <li><a href="/helloworld">/helloworld</a></li>
-    <li><a href="/helloworld2">/helloworld2</a></li>
-    <li><a href="/helloworld3">/helloworld3</a></li>
-    <li><a href="/helloworld4">/helloworld4</a></li>
-    <li><a href="/favicon.ico">favicon.ico (static file)</a></li>
-    <li><a href="/timeout">/timeout (5s)</a></li>
-    <li><a href="/async">/async</a></li>
-    <li><a href="/user/foobar1">/user/&lt;username:alnum></a></li>
-    <li><a href="/module/100/john">/module/&lt;id:num>/&lt;name></a></li>
-    <li><a href="/error/foobar">/error/<message></a></li>
-    <li><a href="/api/3.0">/api/&lt;foobar:version></a></li>
-    <li><a href="/product/2000">/product/&lt;id:num></a></li>
-    <li>
-        <form method="POST" action="/blog/foobar-90">
-            <button>
-                /blog/&lt;title>-&lt;id:num>
-            </button>
-        </form>
-    </li>
-    <li><a href="/custom/A1200">/custom/&lt;myexample:example></a></li>
-    <li><a href="/status/201">/status/&lt;code:num></a></li>
-    <li><a href="/buffer">/buffer</a></li>
-    <li><a href="/uint8array">/uint8array</a></li>
-    <li><a href="/download?file=favicon.ico">Download favicon.ico</a></li>
-    <li><a href="/download?file=sample.txt">Download sample.txt</a></li>
-    <li><a href="/download?file=invalid.txt">Download invalid.txt</a></li>
-    <li><a href="/download">Download missing param</a></li>
-    <li><a href="/404">/404</a></li>
-    <li><a href="/error">/error</a></li>
-</ul>
-</body>
-</html>`;
+        app.streamFile('protected/index-view.html', response).catch((error) => {
+            response.statusCode = error.code;
+            response.end(error.message);
+        });
     });
 
     // Access http://localhost:7000/helloworld for see "Hello world"
@@ -208,10 +171,5 @@ module.exports = (app) => {
             response.writeHead(400, { 'Content-Type': 'text/plain' });
             response.end('Missing param');
         }
-    });
-
-    // Catch error
-    app.action('GET', '/error', (request, response) => {
-        response.end(undefinedVariable);
     });
 };

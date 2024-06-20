@@ -171,9 +171,9 @@ class Teeny
     /**
      * Stream a file
      *
-     * @param   {string}                          path      Set public path
-     * @param   {http.IncomingMessage}            response  Set response
-     * @param   {Object}                          headers   Set custom headers
+     * @param   {string}                            path      Set public path
+     * @param   {http.IncomingMessage}              response  Set response
+     * @param   {Object}                            headers   Set custom headers
      * @returns {Promise<(stream.Writable|Error)>}  Response from promise returns details about server
      */
     streamFile(path, response, headers)
@@ -298,9 +298,8 @@ class Teeny
         const getParams = this.paramPatternsRE;
         const paths = this.paramRoutes;
 
-        let callback;
+        let routes = null;
         let params = null;
-        let code = null;
 
         for (let path in paths) {
             if (paths.hasOwnProperty(path) === false) continue;
@@ -316,26 +315,13 @@ class Teeny
             const found = pathinfo.match(new RegExp('^' + pathRE + '$'));
 
             if (found !== null) {
-                const routes = paths[path];
-
-                callback = routes[method] || routes.ANY;
-
-                if (callback) {
-                    params = found.groups;
-                    code = 200;
-                } else {
-                    code = 405;
-                }
-
+                routes = paths[path];
+                params = found.groups;
                 break;
             }
         }
 
-        if (code === null) return false;
-
-        this.teenyDispatch(request, response, method, pathinfo, params, callback, code);
-
-        return true;
+        return [routes, params];
     }
 
     async teenyDispatch(request, response, method, path, params, callback, code, error)
@@ -411,35 +397,29 @@ class Teeny
         const method = request.method;
         const path = decodeURIComponent(request.url.slice(0, (request.url.indexOf('?') - 1 >>> 0) + 1));
 
-        let code = null;
+        let code = 200;
         let callback;
+        let params = null;
+        let routes = this.routes[path];
 
-        const routes = this.routes[path];
-
-        if (routes) {
-            code = 200;
-
-            if (routes[method]) {
-                callback = routes[method];
-            } else if (routes.ANY) {
-                callback = routes.ANY;
-            } else {
-                code = 405;
-            }
-        } else if (this.hasParams && this.teenyParams(request, response, method, path)) {
-            return;
+        if (!routes && this.hasParams) {
+            [routes, params] = this.teenyParams(request, response, method, path);
         }
 
-        if (code === null) {
-            if (this.publicPath) {
-                this.teenyPublic(method, path, request, response);
-            } else {
-                code = 404;
-            }
+        if (!routes) {
+            code = 404;
+        } else if (routes[method]) {
+            callback = routes[method];
+        } else if (routes.ANY) {
+            callback = routes.ANY;
+        } else {
+            code = 405;
         }
 
-        if (code !== null) {
-            this.teenyDispatch(request, response, method, path, null, callback, code, null);
+        if (code === 404 && this.publicPath) {
+            this.teenyPublic(method, path, request, response);
+        } else {
+            this.teenyDispatch(request, response, method, path, params, callback, code, null);
         }
     }
 

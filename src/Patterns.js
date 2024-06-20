@@ -1,10 +1,9 @@
 module.exports = {
     alnum: '[\\da-zA-Z]+',
     alpha: '[a-zA-Z]+',
-    decimal: '\\d+\\.\\d+',
-    num: '\\d+',
-    noslash: '[^/]+',
+    decimal: '(0|[1-9]\\d*)\\.\\d+',
     nospace: '[^/\\s]+',
-    uuid: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+    num: '\\d+',
+    uuid: '[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}',
     version: '\\d+\\.\\d+(\\.\\d+(-[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*(\\+[\\da-zA-Z]+(\\.[\\da-zA-Z]+)*)?)?)?'
 };
